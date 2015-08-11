@@ -1,0 +1,5 @@
+'atom-workspace':
+  'ctrl-cmd-l': 'levels:toggle-level-select'
+  'ctrl-cmd-t': 'levels:toggle-terminal'
+  'ctrl-cmd-r': 'levels:start-execution'
+  'ctrl-cmd-s': 'levels:stop-execution'

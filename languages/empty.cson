@@ -1,0 +1,8 @@
+# This is the empty grammar.
+
+# The empty grammar will be used as the default grammar for languages whose
+# configuration files do not define the `defaultGrammar` key. Thus, no syntax
+# highlighting will be available for all levels of such languages that are not
+# bound to a level-specific grammar.
+
+'scopeName': 'levels.source.empty'
