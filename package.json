@@ -6,8 +6,7 @@
   "keywords": [
 
   ],
-  "repository": "https://git.informatik.uni-kiel.de/jrt/ps-mapro-2015/tree/master/gui/editor-extensions/atom/levels",
-  "license": "MIT",
+  "repository": "https://github.com/lakrme/atom-levels",
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
   },

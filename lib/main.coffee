@@ -50,6 +50,9 @@ module.exports =
     # activate the event dispatchers
     # commandDispatcher.activate()
     # eventDispatcher.activate()
+    
+    lang = languageRegistry.getLanguageForName('Ruby')
+    console.log languageRegistry.getLanguages()
 
   deactivate: ->
     # clean up the package workspace

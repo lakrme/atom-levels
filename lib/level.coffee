@@ -5,12 +5,34 @@
 module.exports =
 class Level
 
-  constructor: (levelObject) ->
+  constructor: (@properties) ->
     @emitter = new Emitter
 
-    @name        = levelObject.name
-    @description = levelObject.description
-    @grammar     = levelObject.grammar
+  ## Event subscription --------------------------------------------------------
+
+  # onDidChangeProperties: (callback) ->
+  #   @emitter.on('did-change-properties',callback)
+
+  ## Getting level properties --------------------------------------------------
+
+  getNumber: ->
+    @properties.number
+
+  getName: ->
+    @properties.name
+
+  getDescription: ->
+    @properties.description
+
+  getGrammar: ->
+    @properties.grammar
+
+  ## Setting level properties --------------------------------------------------
+
+  ## Managing the associated language ------------------------------------------
+
+  getLanguage: ->
+    @language
 
   setLanguage: (@language) ->
 

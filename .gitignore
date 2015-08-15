@@ -1,5 +1,6 @@
 .DS_Store
-languages/expressions
-languages/ruby
+languages/*
 npm-debug.log
 node_modules
+
+!languages/empty.cson
