@@ -155,21 +155,28 @@ class LanguageRegistry
 
   ## Reading from and writing to language configuration files ------------------
 
-  readLanguageFromConfigurationFile: (configPath) ->
-
-
-  writeLanguageToConfigurationFile: (language) ->
-
-    languageObjectPath = path.join(@dirPath,'config.json')
-    languageObject = CSON.readFileSync(languageObjectPath)
-    languageObject[key] = value for key,value of updates
-    CSON.writeFileSync(languageObjectPath,languageObject)
-    @emitter.emit('did-update',updates)
+  # readLanguageFromConfigurationFile: (configPath) ->
+  #
+  #
+  # writePropertyChangesToConfigurationFile: (languages,propertyChanges) ->
+  #
+  # writeLevelChangesToConfigurationFile: (languages,leve)
+  #
+  # writeLanguageToConfigurationFile: (language) ->
+  #
+  #   languageObjectPath = path.join(@dirPath,'config.json')
+  #   languageObject = CSON.readFileSync(languageObjectPath)
+  #   languageObject[key] = value for key,value of updates
+  #   CSON.writeFileSync(languageObjectPath,languageObject)
+  #   @emitter.emit('did-update',updates)
 
   ## Event handlers ------------------------------------------------------------
 
-  handleLanguageDidChange: (language) ->
+  handleLanguageDidChangeProperties: (language) ->
     @writeLanguageToConfigurationFile
+    undefined
+
+  handleLanguageDidChangeLevels: (language) ->
     undefined
 
 # ------------------------------------------------------------------------------

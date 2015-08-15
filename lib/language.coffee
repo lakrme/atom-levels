@@ -102,13 +102,6 @@ class Language
       return level
     undefined
 
-  getLevels: ->
-    levels = (level for levelName,level of @levelsByName)
-    _.sortBy(levels,(level) -> level.getNumber())
-
-  getLevelsByName: ->
-    @levelsByName
-
   getLevelForNumber: (levelNumber) ->
     for levelName,level of @levelsByName
       if level.getNumber() is levelNumber
@@ -120,6 +113,13 @@ class Language
 
   getLevelOnInitialization: ->
     @getLastActiveLevel() ? @getLevelForNumber[0]
+
+  getLevels: ->
+    levels = (level for levelName,level of @levelsByName)
+    _.sortBy(levels,(level) -> level.getNumber())
+
+  getLevelsByName: ->
+    @levelsByName
 
   ## More interface methods ----------------------------------------------------
 
