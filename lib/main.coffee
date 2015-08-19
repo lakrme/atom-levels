@@ -1,76 +1,56 @@
-# commandDispatcher = require './command-dispatcher'
-# eventDispatcher   = require './event-dispatcher'
+languageInstaller = require('./language-installer').getInstance()
 languageRegistry  = require('./language-registry').getInstance()
 workspaceManager  = require('./workspace-manager').getInstance()
+workspace         = require('./workspace').getInstance()
 
 # ------------------------------------------------------------------------------
 
 module.exports =
 
   config:
-    # workspaceSettings:
-    #   type: 'object'
-    #   properties:
-    #     useOneTerminalForAllTextEditors
-    #       title:
-    #       description: 'This is a description.'
-    #       type: 'boolean'
-    #       default: false
-    #     initiallyHideTheTerminal:
-    #
     notificationSettings:
       type: 'object'
       properties:
-        showAllInfoNotifications:
+        showAllInfos:
           title: 'Show All Info Notifications'
           description: 'This is a description.'
           type: 'boolean'
           default: true
-        showAllSuccessNotifications:
+        showAllSuccesses:
           title: 'Show All Success Notifications'
           description: 'This is a description.'
           type: 'boolean'
           default: true
-        showAllWarningNotifications:
+        showAllWarnings:
           title: 'Show All Warning Notifications'
           description: 'This is a description.'
           type: 'boolean'
           default: true
-        showAllErrorNotifications:
+        showAllErrors:
           title: 'Show All Error Notifications'
           description: 'This is a description.'
           type: 'boolean'
           default: true
 
-  activate: (state={}) ->
-    # initialize the language registry
+  activate: (state) ->
     languageRegistry.loadInstalledLanguages()
-    # set up the package workspaces
+
+    languageInstaller.activate()
+
     workspaceManager.setUpWorkspace(state)
-    # activate the event dispatchers
-    # commandDispatcher.activate()
-    # eventDispatcher.activate()
-    
-    lang = languageRegistry.getLanguageForName('Ruby')
-    console.log languageRegistry.getLanguages()
+    workspaceManager.activate()
 
   deactivate: ->
-    # clean up the package workspace
-    workspaceManager.cleanUpWorkspace()
-    # deactivate the event dispatchers
-    # eventDispatcher.deactivate()
-    # commandDispatcher.deactivate()
-
-  ## Provided services ---------------------------------------------------------
+    workspaceManager.deactivate()
 
   ## Consumed services ---------------------------------------------------------
 
   consumeStatusBar: (statusBar) ->
-    workspaceManager.consumeStatusBar(statusBar)
+    # workspaceManager.consumeStatusBar(statusBar)
 
   ## Serialization -------------------------------------------------------------
 
   serialize: ->
-    workspaceManager.serialize()
+    workspace.serialize()
 
 # ------------------------------------------------------------------------------

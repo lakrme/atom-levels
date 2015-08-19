@@ -7,7 +7,7 @@ TerminalBuffer = require './terminal-buffer'
 module.exports =
 class Terminal
 
-  constructor: (@textEditor,params={}) ->
+  constructor: (params={}) ->
     @emitter = new Emitter
     @buffer = new TerminalBuffer
 
@@ -42,8 +42,6 @@ class Terminal
 
   writeLn: (output) ->
     @buffer.writeLn(output)
-
-  writeTyped
 
   writeTypedMessage = (head,body,{type,icon,data}={}) ->
         if head or body

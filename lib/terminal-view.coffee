@@ -1,6 +1,7 @@
 {Emitter} = require 'atom'
 {View}    = require 'atom-space-pen-views'
 
+module.exports =
 class TerminalView extends View
 
   @content: ->

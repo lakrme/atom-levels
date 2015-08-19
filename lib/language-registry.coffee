@@ -10,10 +10,22 @@ Level     = require('./level')
 
 class LanguageRegistry
 
+  ## Construction and initialization -------------------------------------------
+
   constructor: ->
     @emitter = new Emitter
     @languagesDirPath = path.join(path.dirname(__dirname),'languages')
     @languagesByName = {}
+
+    # constants
+    @grammarNamePattern = 'Levels: <languageName>'
+
+  loadInstalledLanguages: ->
+    for dirName in fs.readdirSync(@languagesDirPath)
+      dirPath = path.join(@languagesDirPath,dirName)
+      if fs.statSync(dirPath).isDirectory(dirPath)
+        @loadLanguage(dirPath)
+    undefined
 
   ## Event subscription --------------------------------------------------------
 
@@ -23,16 +35,19 @@ class LanguageRegistry
   onDidRemoveLanguage: (callback) ->
     @emitter.on('did-remove-language',callback)
 
+  onDidRemoveLanguages: (callback) ->
+    @emitter.on('did-remove-languages',callback)
+
   ## Adding languages to the registry ------------------------------------------
 
   addLanguage: (language) ->
     # set up event handlers
-    language.onDidChangeProperties =>
-      @handleLanguageDidChange(language)
-    language.onDidAddLevel =>
-      @handleLanguageDidChange(language)
-    language.onDidRemoveLevel =>
-      @handleLanguageDidChange(language)
+    # language.onDidChangeProperties =>
+    #   @handleLanguageDidChange(language)
+    # language.onDidAddLevel =>
+    #   @handleLanguageDidChange(language)
+    # language.onDidRemoveLevel =>
+    #   @handleLanguageDidChange(language)
 
     # add language and emit event
     @languagesByName[language.getName()] = language
@@ -46,7 +61,6 @@ class LanguageRegistry
     # adopt basic properties
     properties = {}
     properties.name = config.name
-    properties.lastActiveLevel = config.lastActiveLevel
     properties.scopeName = config.scopeName
     properties.levelCodeFileTypes = config.levelCodeFileTypes
     properties.objectCodeFileType = config.objectCodeFileType
@@ -60,19 +74,17 @@ class LanguageRegistry
     properties.dirPath = languageDirPath
 
     # set the grammar name
-    # TODO move the grammar name pattern to a package configuration object?
-    grammarNamePattern = 'Levels: <languageName>'
-    grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
+    grammarName = @grammarNamePattern.replace(/<languageName>/,config.name)
     properties.grammarName = grammarName
 
     # set the default grammar
     grammarsDirPath = path.join(languageDirPath,'grammars')
     if config.defaultGrammar?
       defaultGrammarPath = path.join(grammarsDirPath,config.defaultGrammar)
-      defaultGrammar = atom.grammars.loadGrammarSync(defaultGrammarPath)
+      defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
     else
       defaultGrammarPath = path.join(@languagesDirPath,'empty.cson')
-      defaultGrammar = atom.grammars.loadGrammarSync(defaultGrammarPath)
+      defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
 
     scopeName = config.scopeName
     fileTypes = config.levelCodeFileTypes
@@ -86,11 +98,9 @@ class LanguageRegistry
     for levelConfig,i in config.levels
       levelProperties = {}
       levelProperties.number = i
-
       # adopt basic properties
       levelProperties.name = levelConfig.name
       levelProperties.description = levelConfig.description
-
       # set level grammar
       grammar = null
       if levelConfig.grammar?
@@ -100,58 +110,63 @@ class LanguageRegistry
         grammar.scopeName = scopeName if scopeName?
         grammar.fileTypes = fileTypes if fileTypes?
       levelProperties.grammar = grammar ? defaultGrammar
-
+      # create level instance
       level = new Level(levelProperties)
       levels.push(level)
 
+      if level.getName() is config.lastActiveLevel
+        properties.lastActiveLevel = level
+
     new Language(properties,levels)
+
 
   loadLanguage: (languageDirPath) ->
     language = @readLanguage(languageDirPath)
     @addLanguage(language)
     language
 
-  loadInstalledLanguages: ->
-    for dirName in fs.readdirSync(@languagesDirPath)
-      dirPath = path.join(@languagesDirPath,dirName)
-      if fs.statSync(dirPath).isDirectory(dirPath)
-        @loadLanguage(dirPath)
-    undefined
-
   ## Removing languages from the registry --------------------------------------
 
   removeLanguage: (language) ->
-    languageName = language.getName()
-    if @getLanguageForName(languageName)?
-      delete @languagesByName[languageName]
-      @emitter.emit('did-remove-language',language)
-      return language
-    undefined
+    removedLanguages = @removeLanguages([language])
+    removedLanguages[0]
+
+  removeLanguages: (languages) ->
+    removedLanguages = []
+    for language in languages
+      languageName = language.getName()
+      if @getLanguageForName(languageName)?
+        delete @languagesByName[languageName]
+        @emitter.emit('did-remove-language',language)
+        removedLanguages.push(language)
+    if removedLanguages.length > 0
+      @emitter.emit('did-remove-languages',removedLanguages)
+    removedLanguages
 
   ## Querying the language registry --------------------------------------------
 
   getLanguageForName: (languageName) ->
     @languagesByName[languageName]
 
+  getLanguageForGrammar: (grammar) ->
+    grammarNameMatch = @grammarNamePattern.replace(/<languageName>/,'(.*)')
+    grammarNameRegExp = new RegExp(grammarNameMatch)
+    if (match = grammarNameRegExp.exec(grammar.name))?
+      @getLanguageForName(match[1])
+
   getLanguages: ->
     language for languageName,language of @languagesByName
 
-  # languageForGrammar: (grammar) ->
-  #   grammarNamePattern = configRegistry.get('grammarNamePattern')
-  #   grammarNameMatch = grammarNamePattern.replace(/<languageName>/,'(.*)')
-  #   grammarNameRegExp = new RegExp(grammarNameMatch)
-  #   if (match = grammarNameRegExp.exec(grammar.name))?
-  #     @languageForName(match[1])
-  #
-  # languagesForFileType: (fileType) ->
-  #   results = []
-  #   for lang in @languages when lang.fileTypes?
-  #     if (i = lang.fileTypes.indexOf(fileType)) >= 0
-  #       lowestIndex = i unless lowestIndex?
-  #       switch
-  #         when i <  lowestIndex then results = [lang]
-  #         when i is lowestIndex then results.push(lang)
-  #   results
+  getLanguagesForFileType: (fileType) ->
+    results = []
+    for languageName,language of @languagesByName
+      fileTypes = language.getLevelCodeFileTypes()
+      if fileTypes? and (i = fileTypes.indexOf(fileType)) >= 0
+        lowestIndex = i unless lowestIndex?
+        switch
+          when i <  lowestIndex then results = [lang]
+          when i is lowestIndex then results.push(lang)
+    results
 
   ## Reading from and writing to language configuration files ------------------
 
@@ -170,13 +185,14 @@ class LanguageRegistry
   #   CSON.writeFileSync(languageObjectPath,languageObject)
   #   @emitter.emit('did-update',updates)
 
-  ## Event handlers ------------------------------------------------------------
+  ## Handling language and level modifications ---------------------------------
 
   handleLanguageDidChangeProperties: (language) ->
-    @writeLanguageToConfigurationFile
+    # TODO update language configuration file here
     undefined
 
   handleLanguageDidChangeLevels: (language) ->
+    # TODO update language configuration file here
     undefined
 
 # ------------------------------------------------------------------------------

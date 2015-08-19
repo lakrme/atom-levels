@@ -112,7 +112,7 @@ class Language
     @levelsByName[levelName]
 
   getLevelOnInitialization: ->
-    @getLastActiveLevel() ? @getLevelForNumber[0]
+    @getLastActiveLevel() ? @getLevelForNumber(0)
 
   getLevels: ->
     levels = (level for levelName,level of @levelsByName)
