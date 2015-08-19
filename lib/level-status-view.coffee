@@ -1,4 +1,7 @@
-{View} = require 'atom-space-pen-views'
+{CompositeDisposable} = require('atom')
+{View}                = require('atom-space-pen-views')
+
+workspace             = require('./workspace').getInstance()
 
 # ------------------------------------------------------------------------------
 
@@ -7,17 +10,25 @@ class LevelStatusView extends View
 
   @content: ->
     @div class: 'levels-view level-status inline-block', =>
-      @a class: 'inline-block', href: '#', click: 'handleDidClickLevelStatusLink'
-                                         , outlet: 'levelStatusLink'
+      @a class: 'inline-block',
+         href: '#',
+         click: 'handleDidClickLevelStatusLink',
+         outlet: 'levelStatusLink'
 
-  initialize: (@workspace) ->
-    # set up model event subscriptions
-    workspace.onDidEnterWorkspace =>
-      @handleDidEnterWorkspace()
-    workspace.onDidExitWorkspace =>
-      @handleDidExitWorkspace()
+  ## Initialization and destruction --------------------------------------------
+
+  initialize: ->
+    @workspaceSubscrs = new CompositeDisposable
+    @workspaceSubscrs.add workspace.onDidEnterWorkspace =>
+      @update(workspace.getActiveLevel())
+      @show()
+    @workspaceSubscrs.add workspace.onDidExitWorkspace =>
+      @hide()
+    @workspaceSubscrs.add workspace.onDidChangeActiveLevel (activeLevel) =>
+      @update(activeLevel)
 
   destroy: ->
+    @workspaceSubscrs.dispose()
 
   ## Handling view events ------------------------------------------------------
 
@@ -25,31 +36,13 @@ class LevelStatusView extends View
     workspaceView = atom.views.getView(atom.workspace)
     atom.commands.dispatch(workspaceView,'levels:toggle-level-select')
 
-  ## Handling model events -----------------------------------------------------
+  ## Updating this view --------------------------------------------------------
 
-  handleDidEnterWorkspace: ->
-    # get active workspace session
-    @activeWorkspaceSession = @workspaceManager.getActiveWorkspaceSession()
-    # set up workspace session event subscription
-    didChangeLevelSubscription?.dispose()
-    didChangeLevelSubscription = @activeWorkspaceSession.onDidChangeLevel =>
-      @update()
-    # update content and make the view visible
-    @update()
-    @show()
-
-  handleDidExitWorkspace: ->
-    @hide()
-    didChangeLevelSubscription?.dispose()
-    @activeWorkspaceSession = null
-
-  ## Updating this view's content ----------------------------------------------
-
-  update: ->
+  update: (activeLevel) ->
     # TODO check is level name is to long, shorten the link?
-    levelName = @activeWorkspaceSession.getLevel().getName()
-    @levelStatusLink.text("(#{levelName})")
-    @levelStatusLink.attr('data-level',levelName)
+    activeLevelName = activeLevel.getName()
+    @levelStatusLink.text("(#{activeLevelName})")
+    @levelStatusLink.attr('data-level',activeLevelName)
 
   ## Showing and hiding this view ----------------------------------------------
 
