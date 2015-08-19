@@ -1,4 +1,5 @@
 .DS_Store
+grammars/*
 languages/*
 npm-debug.log
 node_modules
