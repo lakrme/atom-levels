@@ -1,5 +1,6 @@
 {CompositeDisposable} = require('atom')
 
+languageInstaller     = require('./language-installer').getInstance()
 languageRegistry      = require('./language-registry').getInstance()
 workspace             = require('./workspace').getInstance()
 
@@ -7,7 +8,7 @@ workspace             = require('./workspace').getInstance()
 
 LevelCodeEditor       = require('./level-code-editor')
 LevelStatusView       = require('./level-status-view')
-LevelSelectorView     = require('./level-selector-view')
+LevelSelectView       = require('./level-select-view')
 LanguageConfigView    = require('./language-config-view')
 TerminalView          = require('./terminal-view')
 Terminal              = require('./terminal')
@@ -16,37 +17,76 @@ Terminal              = require('./terminal')
 
 class WorkspaceManager
 
-  ## Initialization and clean-up operations ------------------------------------
+  ## Set-up and clean-up operations --------------------------------------------
 
   setUpWorkspace: (state) ->
+    # restore/initialitze the Levels workspace
+    for textEditor in atom.workspace.getTextEditors()
+    #   if (result = languageUtils.)?
+    #     levelCodeEditor = new LevelCodeEditor
+    #       textEditor: textEditor
+    #       language: result.language
+    #       level: result.level
+    #     continue
+
+      if (data = state?.serializedLevelCodeEditorsById[textEditor.id])?
+        if (language = languageRegistry.getLanguageForName(data.language))?
+          level = language.getLevelForName(data.level)
+          terminal = new Terminal(data.serializedTerminal)
+          levelCodeEditor = new LevelCodeEditor
+            textEditor: textEditor
+            language: language
+            level: level
+            terminal: terminal
+          workspace.addLevelCodeEditor(levelCodeEditor)
+
     # add view providers
     @viewProviders = new CompositeDisposable
     @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
       new TerminalView(terminal)
 
-    # create view components
-    @levelStatusView = new LevelStatusView(workspace)
-    @levelSelectorView = new LevelSelectorView(workspace)
-    @languageConfigView = new LanguageConfigView(workspace)
+    # create workspace view components
+    @levelStatusView = new LevelStatusView
+    @levelSelectView = new LevelSelectView
+    @languageConfigView = new LanguageConfigView
+
+    # initialize active level code editor
+    if (textEditor = atom.workspace.getActiveTextEditor())
+      if workspace.isLevelCodeEditor(textEditor)
+        levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
+        workspace.setActiveLevelCodeEditor(levelCodeEditor)
 
   cleanUpWorkspace: ->
     # remove view providers
     @viewProviders.dispose()
 
-    # destroy view components
+    # destroy workspace view components
     @levelStatusView.destroy()
-    @levelSelectorView.destroy()
+    @levelSelectView.destroy()
     @languageConfigView.destroy()
 
     # destroy status bar tiles
     @levelStatusTile.destroy()
 
-  activate: ->
+  activateEventHandlers: ->
     @subscribeToAtomWorkspace()
     @subscribeToLanguageRegistry()
 
-  deactivate: ->
+  deactivateEventHandlers: ->
     @unsubscribeFromAtomWorkspace()
+    @unsubscribeFromLanguageRegistry()
+
+  activateCommandHandlers: ->
+    @commandHandlers = atom.commands.add 'atom-workspace',
+      'levels:install-languages': (event) => @doInstallLanguages(event)
+      'levels:uninstall-languages': (event) => @doUninstallLanguages(event)
+      'levels:toggle-level-select': (event) => @doToggleLevelSelect(event)
+      'levels:toggle-terminal': (event) => @doToggleTerminal(event)
+      'levels:start-execution': (event) => @doStartExecution(event)
+      'levels:stop-execution': (event) => @doStopExecution(event)
+
+  deactivateCommandHandlers: ->
+    @commandHandlers.dispose()
 
   ## Atom workspace subscriptions ----------------------------------------------
 
@@ -77,7 +117,7 @@ class WorkspaceManager
       levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
       workspace.setActiveLevelCodeEditor(levelCodeEditor)
     else
-      workspace.setActiveLevelCodeEditor(null)
+      workspace.unsetActiveLevelCodeEditor()
 
   handleDidAddTextEditor: ({textEditor}) ->
     @subscribeToTextEditor(textEditor)
@@ -106,36 +146,66 @@ class WorkspaceManager
     @unsubscribeFromTextEditor(textEditor)
 
   handleDidChangeGrammar: (textEditor,oldGrammarName,newGrammar) ->
-    # do nothing if the grammar was changed due to a level change
     unless newGrammar.name is oldGrammarName
-      # update the grammar subscription
+
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
         textEditor.onDidChangeGrammar (grammar) =>
           @handleDidChangeGrammar(textEditor,newGrammar.name,grammar)
-      # update Levels workspace based on the new grammar
+
       language = languageRegistry.getLanguageForGrammar(newGrammar)
       if workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
         if language?
-          # new grammar is a Levels grammar too - update the level code editor
           levelCodeEditor.setLanguage(language)
         else
-          # new grammar is not a Levels grammar - destroy the level code editor
           workspace.destroyLevelCodeEditor(levelCodeEditor)
+          if textEditor is atom.workspace.getActiveTextEditor()
+            workspace.unsetActiveLevelCodeEditor()
       else
         if language?
-          # new grammar is a Levels grammar - a new level code editor is born!
-          levelCodeEditor = new LevelCodeEditor(textEditor,language)
+          levelCodeEditor = new LevelCodeEditor
+            textEditor: textEditor
+            language: language
           workspace.addLevelCodeEditor(levelCodeEditor)
+          if textEditor is atom.workspace.getActiveTextEditor()
+            workspace.setActiveLevelCodeEditor(levelCodeEditor)
 
   ## Language registry subscriptions -------------------------------------------
 
   subscribeToLanguageRegistry: ->
-    languageRegistry.onDidRemoveLanguages (removedLanguages) =>
-      @handleDidRemoveLanguages(removedLanguages)
+    @languageRegistrySubscrs = new CompositeDisposable
+    @languageRegistrySubscrs.add languageRegistry.onDidRemoveLanguages \
+      (removedLanguages) => @handleDidRemoveLanguages(removedLanguages)
+
+  unsubscribeFromLanguageRegistry: ->
+    @languageRegistrySubscrs.dispose()
 
   handleDidRemoveLanguages: (removedLanguages) ->
+
+  ## Command handlers ----------------------------------------------------------
+
+  doInstallLanguages: (event) ->
+    atom.pickFolder (paths) ->
+      languageInstaller.installLanguages(paths) if paths?
+
+  doUninstallLanguages: (event) ->
+    languageInstaller.uninstallLanguages([])
+
+  doToggleLevelSelect: (event) ->
+    if workspace.isActive()
+      @levelSelectView.toggle()
+    else
+      event.abortKeyBinding()
+
+  doToggleTerminal: (event) ->
+    event.abortKeyBinding()
+
+  doStartExecution: (event) ->
+    event.abortKeyBinding()
+
+  doStopExecution: (event) ->
+    event.abortKeyBinding()
 
   ## Consumed services ---------------------------------------------------------
 
@@ -143,6 +213,17 @@ class WorkspaceManager
     @levelStatusTile = statusBar.addRightTile
       item: @levelStatusView
       priority: 9
+
+  ## Serialization -------------------------------------------------------------
+
+  serializeWorkspace: ->
+    serializedLevelCodeEditorsById = {}
+    for levelCodeEditor in workspace.getLevelCodeEditors()
+      serializedLevelCodeEditorsById[levelCodeEditor.getId()] =
+        language: levelCodeEditor.getLanguage().getName()
+        level: levelCodeEditor.getLevel().getName()
+        serializedTerminal: undefined
+    {serializedLevelCodeEditorsById}
 
 # ------------------------------------------------------------------------------
 
