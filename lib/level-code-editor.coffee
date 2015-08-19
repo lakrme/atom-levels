@@ -9,17 +9,18 @@ class LevelCodeEditor
 
   ## Construction and destruction ----------------------------------------------
 
-  constructor: (@textEditor,@language,{@level,@terminal}={}) ->
+  constructor: ({@textEditor,@language,@level,@terminal}) ->
     @emitter = new Emitter
 
     # initialize optional parameters
     @level ?= @language.getLevelOnInitialization()
     @terminal ?= new Terminal
 
-    # activate the current level's grammar
+    # activate the current level's grammarna
     @textEditor.setGrammar(@level.getGrammar())
 
   destroy: ->
+    @terminal.destroy()
 
   ## Event subscription --------------------------------------------------------
 
@@ -34,6 +35,9 @@ class LevelCodeEditor
   getId: ->
     @textEditor.id
 
+  getTextEditor: ->
+    @textEditor
+
   getLanguage: ->
     @language
 
@@ -44,7 +48,7 @@ class LevelCodeEditor
     @terminal
 
   ## Setting the language and the level ----------------------------------------
-
+ 
   setLanguage: (language,{level}={}) ->
     if language.getName() is @language.getName()
       @setLevel(level) if level?

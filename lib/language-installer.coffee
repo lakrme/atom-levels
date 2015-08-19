@@ -6,11 +6,17 @@ languageRegistry = require('./language-registry').getInstance()
 
 class LanguageInstaller
 
-  activate: ->
+  ## Construction --------------------------------------------------------------
+
+  constructor: ->
     @emitter = new Emitter
+
+  ## Installing languages ------------------------------------------------------
 
   installLanguages: (paths) ->
     console.log "DUMMY"
+
+  ## Uninstalling languages ----------------------------------------------------
 
   uninstallLanguages: (languages) ->
     console.log "DUMMY"

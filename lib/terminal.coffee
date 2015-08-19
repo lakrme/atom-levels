@@ -7,6 +7,8 @@ TerminalBuffer = require './terminal-buffer'
 module.exports =
 class Terminal
 
+  ## Construction and destruction ----------------------------------------------
+
   constructor: (params={}) ->
     @emitter = new Emitter
     @buffer = new TerminalBuffer
@@ -17,6 +19,8 @@ class Terminal
 
     @typedMessageBuffer = null
     @typedMessageCurrentLineBuffer = ''
+
+  destroy: ->
 
   ## Event subscription --------------------------------------------------------
 
@@ -90,9 +94,5 @@ class Terminal
   # writeLn: ()
   #
   # show: ->
-
-  ## Serialization -------------------------------------------------------------
-
-  serialize: ->
 
 # ------------------------------------------------------------------------------

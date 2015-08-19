@@ -1,7 +1,5 @@
-languageInstaller = require('./language-installer').getInstance()
 languageRegistry  = require('./language-registry').getInstance()
 workspaceManager  = require('./workspace-manager').getInstance()
-workspace         = require('./workspace').getInstance()
 
 # ------------------------------------------------------------------------------
 
@@ -35,22 +33,23 @@ module.exports =
   activate: (state) ->
     languageRegistry.loadInstalledLanguages()
 
-    languageInstaller.activate()
-
     workspaceManager.setUpWorkspace(state)
-    workspaceManager.activate()
+    workspaceManager.activateEventHandlers()
+    workspaceManager.activateCommandHandlers()
 
   deactivate: ->
-    workspaceManager.deactivate()
+    workspaceManager.cleanUpWorkspace()
+    workspaceManager.deactivateEventHandlers()
+    workspaceManager.deactivateCommandHandlers()
 
   ## Consumed services ---------------------------------------------------------
 
   consumeStatusBar: (statusBar) ->
-    # workspaceManager.consumeStatusBar(statusBar)
+    workspaceManager.consumeStatusBar(statusBar)
 
   ## Serialization -------------------------------------------------------------
 
   serialize: ->
-    workspace.serialize()
+    workspaceManager.serializeWorkspace()
 
 # ------------------------------------------------------------------------------

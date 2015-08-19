@@ -10,15 +10,16 @@ Level     = require('./level')
 
 class LanguageRegistry
 
+  ## Constants -----------------------------------------------------------------
+
+  GRAMMAR_NAME_PATTERN = 'Levels: <languageName>'
+
   ## Construction and initialization -------------------------------------------
 
   constructor: ->
     @emitter = new Emitter
     @languagesDirPath = path.join(path.dirname(__dirname),'languages')
     @languagesByName = {}
-
-    # constants
-    @grammarNamePattern = 'Levels: <languageName>'
 
   loadInstalledLanguages: ->
     for dirName in fs.readdirSync(@languagesDirPath)
@@ -74,7 +75,7 @@ class LanguageRegistry
     properties.dirPath = languageDirPath
 
     # set the grammar name
-    grammarName = @grammarNamePattern.replace(/<languageName>/,config.name)
+    grammarName = GRAMMAR_NAME_PATTERN.replace(/<languageName>/,config.name)
     properties.grammarName = grammarName
 
     # set the default grammar
@@ -119,7 +120,6 @@ class LanguageRegistry
 
     new Language(properties,levels)
 
-
   loadLanguage: (languageDirPath) ->
     language = @readLanguage(languageDirPath)
     @addLanguage(language)
@@ -149,7 +149,7 @@ class LanguageRegistry
     @languagesByName[languageName]
 
   getLanguageForGrammar: (grammar) ->
-    grammarNameMatch = @grammarNamePattern.replace(/<languageName>/,'(.*)')
+    grammarNameMatch = GRAMMAR_NAME_PATTERN.replace(/<languageName>/,'(.*)')
     grammarNameRegExp = new RegExp(grammarNameMatch)
     if (match = grammarNameRegExp.exec(grammar.name))?
       @getLanguageForName(match[1])

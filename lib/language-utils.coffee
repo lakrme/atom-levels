@@ -4,6 +4,11 @@ languageRegistry = require('./language-registry')
 
 module.exports =
 
+  ## Constants -----------------------------------------------------------------
+
+  FILE_HEADER_PATTERN: 'Language: <languageName>, Level: <levelName>'
+  FILE_HEADER_REG_EXP:  /Language:\s+(.+),\s+Level:\s+(.+)/
+
   ## Validating languages ------------------------------------------------------
 
   ## Writing language and level
