@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 
-class NotificationManager
+module.exports =
 
   # default message heads
   defaultInfoHead: 'Levels: '
@@ -44,14 +44,8 @@ class NotificationManager
         detail: body
         dismissable: true
 
-# ------------------------------------------------------------------------------
-
-module.exports =
-class NotificationManagerProvider
-
-  instance = null
-
-  @getInstance: ->
-    instance ?= new NotificationManager
-
+  executionNotPossible:
+    """
+    Execution not possible!
+    """
 # ------------------------------------------------------------------------------
