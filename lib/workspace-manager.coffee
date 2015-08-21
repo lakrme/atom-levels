@@ -1,10 +1,12 @@
 {CompositeDisposable} = require('atom')
 
+executionManager      = require('./execution-manager').getInstance()
 languageInstaller     = require('./language-installer').getInstance()
 languageRegistry      = require('./language-registry').getInstance()
 workspace             = require('./workspace').getInstance()
 
-# languageUtils         = require('./language-utils')
+notificationUtils     = require('./notification-utils')
+workspaceUtils        = require('./workspace-utils')
 
 LevelCodeEditor       = require('./level-code-editor')
 LevelStatusView       = require('./level-status-view')
@@ -19,27 +21,7 @@ class WorkspaceManager
 
   ## Set-up and clean-up operations --------------------------------------------
 
-  setUpWorkspace: (state) ->
-    # restore/initialitze the Levels workspace
-    for textEditor in atom.workspace.getTextEditors()
-    #   if (result = languageUtils.)?
-    #     levelCodeEditor = new LevelCodeEditor
-    #       textEditor: textEditor
-    #       language: result.language
-    #       level: result.level
-    #     continue
-
-      if (data = state?.serializedLevelCodeEditorsById[textEditor.id])?
-        if (language = languageRegistry.getLanguageForName(data.language))?
-          level = language.getLevelForName(data.level)
-          terminal = new Terminal(data.serializedTerminal)
-          levelCodeEditor = new LevelCodeEditor
-            textEditor: textEditor
-            language: language
-            level: level
-            terminal: terminal
-          workspace.addLevelCodeEditor(levelCodeEditor)
-
+  setUpWorkspace: (@state) ->
     # add view providers
     @viewProviders = new CompositeDisposable
     @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
@@ -49,12 +31,6 @@ class WorkspaceManager
     @levelStatusView = new LevelStatusView
     @levelSelectView = new LevelSelectView
     @languageConfigView = new LanguageConfigView
-
-    # initialize active level code editor
-    if (textEditor = atom.workspace.getActiveTextEditor())
-      if workspace.isLevelCodeEditor(textEditor)
-        levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
-        workspace.setActiveLevelCodeEditor(levelCodeEditor)
 
   cleanUpWorkspace: ->
     # remove view providers
@@ -91,17 +67,12 @@ class WorkspaceManager
   ## Atom workspace subscriptions ----------------------------------------------
 
   subscribeToAtomWorkspace: ->
-    # general Atom workspace subscriptions
-    @atomWorkspaceSubscrs = new CompositeDisposable
-    @atomWorkspaceSubscrs.add atom.workspace.onDidChangeActivePaneItem (item) =>
-      @handleDidChangeActivePaneItem(item)
-    @atomWorkspaceSubscrs.add atom.workspace.onDidAddTextEditor (event) =>
-      @handleDidAddTextEditor(event)
-
-    # text editor subscriptions
     @textEditorSubscrsById = {}
-    for textEditor in atom.workspace.getTextEditors()
-      @subscribeToTextEditor(textEditor)
+    @atomWorkspaceSubscrs = new CompositeDisposable
+    @atomWorkspaceSubscrs.add atom.workspace.observeTextEditors (textEditor) =>
+      @handleDidAddTextEditor(textEditor)
+    @atomWorkspaceSubscrs.add atom.workspace.observeActivePaneItem (item) =>
+      @handleDidChangeActivePaneItem(item)
 
   unsubscribeFromAtomWorkspace: ->
     # dispose Atom workspace event handlers
@@ -119,9 +90,27 @@ class WorkspaceManager
     else
       workspace.unsetActiveLevelCodeEditor()
 
-  handleDidAddTextEditor: ({textEditor}) ->
+  handleDidAddTextEditor: (textEditor) ->
+    result = workspaceUtils.readLanguageInformationFromFileHeader(textEditor)
+    language = result?.language
+    level = result?.level
+
+    if (data = @state?.serializedLevelCodeEditorsById[textEditor.id])?
+      languageName = data.language
+      levelName = data.level
+      unless language? and language.getName() isnt languageName
+        language ?= languageRegistry.getLanguageForName(languageName)
+        level ?= language.getLevelForName(levelName) if language?
+      terminal = new Terminal(data.serializedTerminal)
+
+    language ?= workspaceUtils.readLanguageFromFileExtension(textEditor)
+    language ?= languageRegistry.getLanguageForGrammar(textEditor.getGrammar())
+
+    if language?
+      params = {textEditor,language,level,terminal}
+      levelCodeEditor = new LevelCodeEditor(params)
+      workspace.addLevelCodeEditor(levelCodeEditor)
     @subscribeToTextEditor(textEditor)
-    # ...
 
   ## Text editor subscriptions -------------------------------------------------
 
@@ -202,7 +191,14 @@ class WorkspaceManager
     event.abortKeyBinding()
 
   doStartExecution: (event) ->
-    event.abortKeyBinding()
+    if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
+      if activeLevelCodeEditor.getTextEditor().getPath()?
+        executionManager.startExecution(activeLevelCodeEditor)
+      else
+        notificationUtils.addError notificationUtils.executionNotPossible,
+          important: true
+    else
+      event.abortKeyBinding()
 
   doStopExecution: (event) ->
     event.abortKeyBinding()
