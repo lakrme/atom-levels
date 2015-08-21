@@ -20,11 +20,8 @@ class Language
   onDidChangeProperties: (callback) ->
     @emitter.on('did-change-properties',callback)
 
-  onDidAddLevel: (callback) ->
-    @emitter.on('did-add-level',callback)
-
-  onDidRemoveLevel: (callback) ->
-    @emitter.on('did-remove-level',callback)
+  onDidChangeLevels: (callback) ->
+    @emitter.on('did-change-levels',callback)
 
   ## Getting language properties -----------------------------------------------
 
@@ -78,6 +75,7 @@ class Language
     for name,newValue of newProperties
       if name of @properties and newValue isnt @properties[name]
         oldProperties[name] = @properties[name]
+        # TODO applay changes to grammars etc.
         @properties[name] = newValue
       else
         delete newProperties[name]
@@ -87,20 +85,10 @@ class Language
       @emitter.emit('did-change-properties',{oldProperties,newProperties})
     undefined
 
+  setLevelProperties: (newLevelPropertiesByLevelName) ->
+
+
   ## Managing language levels --------------------------------------------------
-
-  addLevel: (level) ->
-    # TODO to be implemented
-    undefined
-
-  removeLevel: (level) ->
-    if @hasLevel(level)
-      if level is @getLastActiveLevel()
-        @setLastActiveLevel(undefined)
-      delete @levelsByName[levelName]
-      @emitter.emit('did-remove-level',level)
-      return level
-    undefined
 
   getLevelForNumber: (levelNumber) ->
     for levelName,level of @levelsByName

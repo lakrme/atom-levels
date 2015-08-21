@@ -1,18 +1,16 @@
-{Emitter} = require('atom')
-fs        = require('fs')
-path      = require('path')
-CSON      = require('season')
+{Emitter}     = require('atom')
+fs            = require('fs')
+path          = require('path')
+CSON          = require('season')
 
-Language  = require('./language')
-Level     = require('./level')
+languageUtils = require('./language-utils')
+
+Language      = require('./language')
+Level         = require('./level')
 
 # ------------------------------------------------------------------------------
 
 class LanguageRegistry
-
-  ## Constants -----------------------------------------------------------------
-
-  GRAMMAR_NAME_PATTERN = 'Levels: <languageName>'
 
   ## Construction and initialization -------------------------------------------
 
@@ -45,10 +43,6 @@ class LanguageRegistry
     # set up event handlers
     # language.onDidChangeProperties =>
     #   @handleLanguageDidChange(language)
-    # language.onDidAddLevel =>
-    #   @handleLanguageDidChange(language)
-    # language.onDidRemoveLevel =>
-    #   @handleLanguageDidChange(language)
 
     # add language and emit event
     @languagesByName[language.getName()] = language
@@ -75,7 +69,8 @@ class LanguageRegistry
     properties.dirPath = languageDirPath
 
     # set the grammar name
-    grammarName = GRAMMAR_NAME_PATTERN.replace(/<languageName>/,config.name)
+    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
+    grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
     properties.grammarName = grammarName
 
     # set the default grammar
@@ -149,7 +144,8 @@ class LanguageRegistry
     @languagesByName[languageName]
 
   getLanguageForGrammar: (grammar) ->
-    grammarNameMatch = GRAMMAR_NAME_PATTERN.replace(/<languageName>/,'(.*)')
+    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
+    grammarNameMatch = grammarNamePattern.replace(/<languageName>/,'(.*)')
     grammarNameRegExp = new RegExp(grammarNameMatch)
     if (match = grammarNameRegExp.exec(grammar.name))?
       @getLanguageForName(match[1])
@@ -164,8 +160,8 @@ class LanguageRegistry
       if fileTypes? and (i = fileTypes.indexOf(fileType)) >= 0
         lowestIndex = i unless lowestIndex?
         switch
-          when i <  lowestIndex then results = [lang]
-          when i is lowestIndex then results.push(lang)
+          when i <  lowestIndex then results = [language]
+          when i is lowestIndex then results.push(language)
     results
 
   ## Reading from and writing to language configuration files ------------------
