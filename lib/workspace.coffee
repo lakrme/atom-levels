@@ -20,11 +20,19 @@ class Workspace
   onDidExitWorkspace: (callback) ->
     @emitter.on('did-exit-workspace',callback)
 
+  observeLevelCodeEditors: (callback) ->
+    callback(levelCodeEditor) for levelCodeEditor in @getLevelCodeEditors()
+    @onDidAddLevelCodeEditor(callback)
+
   onDidAddLevelCodeEditor: (callback) ->
     @emitter.on('did-add-level-code-editor',callback)
 
   onDidDestroyLevelCodeEditor: (callback) ->
     @emitter.on('did-destroy-level-code-editor',callback)
+
+  observeActiveLevelCodeEditor: (callback) ->
+    callback(@activeLevelCodeEditor) if @isActive()
+    @onDidChangeActiveLevelCodeEditor(callback)
 
   onDidChangeActiveLevelCodeEditor: (callback) ->
     @emitter.on('did-change-active-level-code-editor',callback)
@@ -45,11 +53,13 @@ class Workspace
   addLevelCodeEditor: (levelCodeEditor) ->
     @levelCodeEditorsById[levelCodeEditor.getId()] = levelCodeEditor
     @emitter.emit('did-add-level-code-editor',levelCodeEditor)
+    console.log @levelCodeEditorsById
 
   destroyLevelCodeEditor: (levelCodeEditor) ->
     delete @levelCodeEditorsById[levelCodeEditor.getId()]
     levelCodeEditor.destroy()
     @emitter.emit('did-destroy-level-code-editor')
+    console.log @levelCodeEditorsById
 
   getLevelCodeEditorForTextEditor: (textEditor) ->
     @levelCodeEditorsById[textEditor.id]
