@@ -6,6 +6,15 @@ workspaceManager  = require('./workspace-manager').getInstance()
 module.exports =
 
   config:
+    workspaceSettings:
+      type: 'object'
+      properties:
+        whenToWriteFileHeader:
+          title: 'When To Write File Header'
+          description: 'This is a description.'
+          type: 'string'
+          default: 'before saving the buffer'
+          enum: ['before saving the buffer','after setting the level']
     notificationSettings:
       type: 'object'
       properties:

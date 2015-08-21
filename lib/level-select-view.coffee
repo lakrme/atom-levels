@@ -28,7 +28,9 @@ class LevelSelectView extends SelectListView
 
   confirmed: ({level}) ->
     @cancel()
-    @activeLevelCodeEditor.setLevel(level)
+    unless level.getName() is @activeLevel.getName()
+      @activeLevelCodeEditor.setLevel(level)
+      @activeLanguage.setLastActiveLevel(level)
 
   viewForItem: ({level}) ->
     listElement = document.createElement('li')

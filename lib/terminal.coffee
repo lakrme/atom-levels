@@ -1,6 +1,6 @@
-{Emitter} = require 'atom'
+{CompositeDisposable,Emitter} = require 'atom'
 
-TerminalBuffer = require './terminal-buffer'
+TerminalBuffer                = require './terminal-buffer'
 
 # ------------------------------------------------------------------------------
 
@@ -38,6 +38,25 @@ class Terminal
 
   onDidReadTypedMessage: (callback) ->
     @emitter.on('did-read-typed-message',callback)
+
+  ## Managing associated level code editors ------------------------------------
+
+  # addLevelCodeEditor: (levelCodeEditor) ->
+  #   levelCodeEditorSubscrs = new CompositeDisposable
+  #   levelCodeEditorSubscrs.add levelCodeEditor.onDidActivate =>
+  #
+  #   levelCodeEditorSubscrs.add levelCodeEditor.onDidDeactivate =>
+  #
+  #   levelCodeEditorSubscrs.add levelCodeEditor.onDidDestroy =>
+  #
+  #   @levelCodeEditorSubscrsById[levelCodeEditor.getId()] = n
+  #
+  # removeLevelCodeEditor: (levelCodeEditor) ->
+  #   id = levelCodeEditor.getId()
+  #   if (levelCodeEditorSubscrs = @levelCodeEditorSubscrsById[id])?
+  #     if @activeLevelCodeEditor
+  #     levelCodeEditorSubscrs.dispose()
+  #     delete @levelCodeEditorSubscrsById[id]
 
   ## Writing to the terminal ---------------------------------------------------
 
@@ -94,5 +113,11 @@ class Terminal
   # writeLn: ()
   #
   # show: ->
+
+  ## Showing and hiding the terminal -------------------------------------------
+
+  show: ->
+
+  hide: ->
 
 # ------------------------------------------------------------------------------
