@@ -4,7 +4,8 @@ module.exports =
 
   ## Constants -----------------------------------------------------------------
 
-  GRAMMAR_NAME_PATTERN: 'Levels: <languageName>'
+  GRAMMAR_NAME_PATTERN: '<languageName> (Levels)'
+  GRAMMAR_NAME_REG_EXP: /(.*) \(Levels\)/
 
   ## Validating languages ------------------------------------------------------
 

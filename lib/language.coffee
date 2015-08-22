@@ -17,22 +17,13 @@ class Language
 
   ## Event subscription --------------------------------------------------------
 
-  onDidChangeProperties: (callback) ->
-    @emitter.on('did-change-properties',callback)
-
-  onDidChangeLevels: (callback) ->
-    @emitter.on('did-change-levels',callback)
+  onDidChange: (callback) ->
+    @emitter.on('did-change',callback)
 
   ## Getting language properties -----------------------------------------------
 
   getName: ->
     @properties.name
-
-  getDirectoryPath: ->
-    @properties.dirPath
-
-  getGrammarName: ->
-    @properties.grammarName
 
   getDefaultGrammar: ->
     @properties.defaultGrammar
@@ -67,26 +58,38 @@ class Language
   ## Setting language properties -----------------------------------------------
 
   setLastActiveLevel: (level) ->
-    @setProperties({lastActiveLevel: level})
+    @set({newProperties: {lastActiveLevel: level}})
 
-  setProperties: (newProperties) ->
-    # save old property values and set new property values
-    oldProperties = {}
-    for name,newValue of newProperties
-      if name of @properties and newValue isnt @properties[name]
-        oldProperties[name] = @properties[name]
-        # TODO applay changes to grammars etc.
-        @properties[name] = newValue
-      else
-        delete newProperties[name]
+  set: (changes) ->
+    # apply language property changes
+    if (newProperties = changes?.newProperties)?
+      oldProperties = {}
+      for name,newValue of newProperties
+        if name of @properties and newValue isnt @properties[name]
+          oldProperties[name] = @properties[name]
+          # TODO apply changes to grammars etc.
+          @properties[name] = newValue
+        else
+          delete newProperties[name]
+
+      if Object.keys(newProperties).length isnt 0
+        propertyChanges = {oldProperties,newProperties}
+
+    # apply level changes
+    if (newLevelPropertiesByLevelName = changes?.newLevelPropertiesByLevelName)?
+      levelChangesByLevelName = undefined
+      for levelName,newLevelProperties of newLevelPropertiesByLevelName
+        if (level = @getLevelForName(levelName))?
+          if (result = level.set(newLevelProperties))?
+            levelChangesByLevelName ?= {}
+            levelChangesByLevelName[levelName] = {}
+            levelChangesByLevelName[levelName].oldProperties = result.oldProperties
+            levelChangesByLevelName[levelName].newProperties = result.newProperties
 
     # emit event if changes were made
-    if Object.keys(newProperties).length isnt 0
-      @emitter.emit('did-change-properties',{oldProperties,newProperties})
+    if propertyChanges? or levelChangesByLevelName?
+      @emitter.emit('did-change',{propertyChanges,levelChangesByLevelName})
     undefined
-
-  setLevelProperties: (newLevelPropertiesByLevelName) ->
-
 
   ## Managing language levels --------------------------------------------------
 

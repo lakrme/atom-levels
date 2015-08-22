@@ -143,6 +143,7 @@ class WorkspaceManager
           @handleDidChangeGrammar(textEditor,newGrammar.name,grammar)
 
       language = languageRegistry.getLanguageForGrammar(newGrammar)
+      console.log language
       if workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
         if language?
@@ -195,8 +196,9 @@ class WorkspaceManager
       if activeLevelCodeEditor.getTextEditor().getPath()?
         executionManager.startExecution(activeLevelCodeEditor)
       else
-        notificationUtils.addError notificationUtils.executionNotPossible,
-          important: true
+        console.log atom.showSaveDialogSync()
+        # notificationUtils.addError notificationUtils.executionNotPossible,
+        #   important: true
     else
       event.abortKeyBinding()
 

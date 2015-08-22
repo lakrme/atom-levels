@@ -41,8 +41,8 @@ class LanguageRegistry
 
   addLanguage: (language) ->
     # set up event handlers
-    # language.onDidChangeProperties =>
-    #   @handleLanguageDidChange(language)
+    language.onDidChange (changes) =>
+      @applyLanguageChanges(language,changes)
 
     # add language and emit event
     @languagesByName[language.getName()] = language
@@ -50,70 +50,10 @@ class LanguageRegistry
     undefined
 
   readLanguage: (languageDirPath) ->
-    # read configuration file
-    config = CSON.readFileSync(path.join(languageDirPath,'config.json'))
-
-    # adopt basic properties
-    properties = {}
-    properties.name = config.name
-    properties.scopeName = config.scopeName
-    properties.levelCodeFileTypes = config.levelCodeFileTypes
-    properties.objectCodeFileType = config.objectCodeFileType
-    properties.lineCommentPattern = config.lineCommentPattern
-    properties.executionMode = config.executionMode
-    properties.interpreterCmdPattern = config.interpreterCmdPattern
-    properties.compilerCmdPattern = config.compilerCmdPattern
-    properties.executionCmdPattern = config.executionCmdPattern
-
-    # set the directory path
-    properties.dirPath = languageDirPath
-
-    # set the grammar name
-    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
-    grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
-    properties.grammarName = grammarName
-
-    # set the default grammar
-    grammarsDirPath = path.join(languageDirPath,'grammars')
-    if config.defaultGrammar?
-      defaultGrammarPath = path.join(grammarsDirPath,config.defaultGrammar)
-      defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
-    else
-      defaultGrammarPath = path.join(@languagesDirPath,'empty.cson')
-      defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
-
-    scopeName = config.scopeName
-    fileTypes = config.levelCodeFileTypes
-    defaultGrammar.name = grammarName
-    defaultGrammar.scopeName = scopeName if scopeName?
-    defaultGrammar.fileTypes = fileTypes if fileTypes?
-    properties.defaultGrammar = defaultGrammar
-
-    # create the language levels
-    levels = []
-    for levelConfig,i in config.levels
-      levelProperties = {}
-      levelProperties.number = i
-      # adopt basic properties
-      levelProperties.name = levelConfig.name
-      levelProperties.description = levelConfig.description
-      # set level grammar
-      grammar = null
-      if levelConfig.grammar?
-        grammarPath = path.join(grammarsDirPath,levelConfig.grammar)
-        grammar = atom.grammars.readGrammarSync(grammarPath)
-        grammar.name = grammarName
-        grammar.scopeName = scopeName if scopeName?
-        grammar.fileTypes = fileTypes if fileTypes?
-      levelProperties.grammar = grammar ? defaultGrammar
-      # create level instance
-      level = new Level(levelProperties)
-      levels.push(level)
-
-      if level.getName() is config.lastActiveLevel
-        properties.lastActiveLevel = level
-
-    new Language(properties,levels)
+    configFilePath = path.join(languageDirPath,'config.json')
+    language = @readLanguageFromConfigurationFile(configFilePath)
+    language.dirPath = languageDirPath
+    language
 
   loadLanguage: (languageDirPath) ->
     language = @readLanguage(languageDirPath)
@@ -144,9 +84,7 @@ class LanguageRegistry
     @languagesByName[languageName]
 
   getLanguageForGrammar: (grammar) ->
-    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
-    grammarNameMatch = grammarNamePattern.replace(/<languageName>/,'(.*)')
-    grammarNameRegExp = new RegExp(grammarNameMatch)
+    grammarNameRegExp = languageUtils.GRAMMAR_NAME_REG_EXP
     if (match = grammarNameRegExp.exec(grammar.name))?
       @getLanguageForName(match[1])
 
@@ -164,31 +102,98 @@ class LanguageRegistry
           when i is lowestIndex then results.push(language)
     results
 
-  ## Reading from and writing to language configuration files ------------------
+  ## Converting configuration files to languages and vice versa ----------------
 
-  # readLanguageFromConfigurationFile: (configPath) ->
-  #
-  #
-  # writePropertyChangesToConfigurationFile: (languages,propertyChanges) ->
-  #
-  # writeLevelChangesToConfigurationFile: (languages,leve)
-  #
-  # writeLanguageToConfigurationFile: (language) ->
-  #
-  #   languageObjectPath = path.join(@dirPath,'config.json')
-  #   languageObject = CSON.readFileSync(languageObjectPath)
-  #   languageObject[key] = value for key,value of updates
-  #   CSON.writeFileSync(languageObjectPath,languageObject)
-  #   @emitter.emit('did-update',updates)
+  readLanguageFromConfigurationFile: (configFilePath) ->
+    configDirPath = path.dirname(configFilePath)
+    config = CSON.readFileSync(configFilePath)
 
-  ## Handling language and level modifications ---------------------------------
+    # adopt basic properties
+    properties = {}
+    properties.name = config.name
+    properties.scopeName = config.scopeName
+    properties.levelCodeFileTypes = config.levelCodeFileTypes
+    properties.objectCodeFileType = config.objectCodeFileType
+    properties.lineCommentPattern = config.lineCommentPattern
+    properties.executionMode = config.executionMode
+    properties.interpreterCmdPattern = config.interpreterCmdPattern
+    properties.compilerCmdPattern = config.compilerCmdPattern
+    properties.executionCmdPattern = config.executionCmdPattern
 
-  handleLanguageDidChangeProperties: (language) ->
-    # TODO update language configuration file here
-    undefined
+    # set the default grammar
+    if (defaultGrammarPath = config.defaultGrammar)?
+      unless path.isAbsolute(defaultGrammarPath)
+        defaultGrammarPath = path.join(configDirPath,defaultGrammarPath)
+    else
+      defaultGrammarPath = path.join(@languagesDirPath,'empty.cson')
+    defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
 
-  handleLanguageDidChangeLevels: (language) ->
-    # TODO update language configuration file here
+    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
+    grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
+    scopeName = config.scopeName
+    fileTypes = config.levelCodeFileTypes
+    defaultGrammar.name = grammarName
+    defaultGrammar.scopeName = scopeName if scopeName?
+    defaultGrammar.fileTypes = fileTypes if fileTypes?
+    properties.defaultGrammar = defaultGrammar
+
+    # create the language levels
+    levels = []
+    for levelConfig,i in config.levels
+      levelProperties = {}
+      levelProperties.number = i
+      # adopt basic properties
+      levelProperties.name = levelConfig.name
+      levelProperties.description = levelConfig.description
+      # set level grammar
+      grammar = null
+      if (grammarPath = levelConfig.grammar)?
+        unless path.isAbsolute(grammarPath)
+          grammarPath = path.join(configDirPath,grammarPath)
+        grammar = atom.grammars.readGrammarSync(grammarPath)
+        grammar.name = grammarName
+        grammar.scopeName = scopeName if scopeName?
+        grammar.fileTypes = fileTypes if fileTypes?
+      levelProperties.grammar = grammar ? defaultGrammar
+      # create level instance
+      level = new Level(levelProperties)
+      levels.push(level)
+      # create last active level reference
+      if level.getName() is config.lastActiveLevel
+        properties.lastActiveLevel = level
+      else
+        properties.lastActiveLevel = undefined
+
+    new Language(properties,levels)
+
+  writeLanguageToConfigurationFile: (language,configFilePath) ->
+    config = {}
+    config.name = language.getName()
+    config.levels =
+      for level in language.getLevels()
+        name: level.getName()
+        description: level.getDescription()
+        # TODO filter default/empty grammar
+        grammar: level.getGrammar().path
+    config.lastActiveLevel = language.getLastActiveLevel()?.getName()
+    config.defaultGrammar = language.getDefaultGrammar()?.path
+    config.scopeName = language.getScopeName()
+    config.levelCodeFileTypes = language.getLevelCodeFileTypes()
+    config.objectCodeFileType = language.getObjectCodeFileType()
+    config.lineCommentPattern = language.getLineCommentPattern()
+    config.executionMode = language.getExecutionMode()
+    config.interpreterCmdPattern = language.getInterpreterCommandPattern()
+    config.compilerCmdPattern = language.getCompilerCommandPattern()
+    config.executionCmdPattern = language.getExecutionCommandPattern()
+    CSON.writeFileSync(configFilePath,config)
+
+  ## Handling language changes -------------------------------------------------
+
+  applyLanguageChanges: (language,changes) ->
+    console.log changes
+    # TODO do something with the changes (topkek)
+    configFilePath = path.join(language.dirPath,'config.json')
+    @writeLanguageToConfigurationFile(language,configFilePath)
     undefined
 
 # ------------------------------------------------------------------------------

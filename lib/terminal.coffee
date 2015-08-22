@@ -1,6 +1,8 @@
-{CompositeDisposable,Emitter} = require 'atom'
+{CompositeDisposable,Emitter} = require('atom')
 
-TerminalBuffer                = require './terminal-buffer'
+workspace                     = require('./workspace')
+
+TerminalBuffer                = require('./terminal-buffer')
 
 # ------------------------------------------------------------------------------
 
@@ -19,6 +21,16 @@ class Terminal
 
     @typedMessageBuffer = null
     @typedMessageCurrentLineBuffer = ''
+
+    @levelCodeEditorsById = {}
+
+    # @workspaceSubscrs = new CompositeDisposable
+    # @workspaceSubscrs.add workspace.onDidEnterWorkspace =>
+    #
+    # @workspaceSubscrs.add \
+    #   workspace.onDidChangeActiveLevelCodeEditor (activeLevelCodeEditor) =>
+    #     if @levelCodeEditorsById[activeLevelCodeEditor.getId()]?
+    #       @updateFrameFor
 
   destroy: ->
 
@@ -41,7 +53,11 @@ class Terminal
 
   ## Managing associated level code editors ------------------------------------
 
-  # addLevelCodeEditor: (levelCodeEditor) ->
+  addLevelCodeEditor: (levelCodeEditor) ->
+    @levelCodeEditorsById[levelCodeEditor.getId()] = levelCodeEditor
+
+  removeLevelCodeEditor: (levelCodeEditor) ->
+    delete @levelCodeEditorsById[levelCodeEditor.getId()]
   #   levelCodeEditorSubscrs = new CompositeDisposable
   #   levelCodeEditorSubscrs.add levelCodeEditor.onDidActivate =>
   #

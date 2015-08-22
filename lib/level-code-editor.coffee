@@ -15,7 +15,7 @@ class LevelCodeEditor
     @emitter = new Emitter
     @setLanguage(language,level)
     @terminal ?= new Terminal
-    # @terminal.addLevelCodeEditor(@)
+    @terminal.addLevelCodeEditor(@)
     @active = false
 
     # subscribe to text buffer
@@ -33,12 +33,6 @@ class LevelCodeEditor
 
   onDidChangeLevel: (callback) ->
     @emitter.on('did-change-level',callback)
-
-  onDidActivate: (callback) ->
-    @emitter.on('did-activate',callback)
-
-  onDidDeactivate: (callback) ->
-    @emitter.on('did-deactivate',callback)
 
   onDidDestroy: (callback) ->
     @emitter.on('did-destroy',callback)
@@ -64,17 +58,6 @@ class LevelCodeEditor
 
   getTerminal: ->
     @terminal
-
-  ## Activating and deactivating -----------------------------------------------
-
-  activate: ->
-    @active = true
-
-  deactivate: ->
-    @active = false
-
-  isActive: ->
-    @active
 
   ## Writing language informations to the file header --------------------------
 
