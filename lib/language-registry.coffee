@@ -102,7 +102,7 @@ class LanguageRegistry
           when i is lowestIndex then results.push(language)
     results
 
-  ## Converting configuration files to languages and vice versa ----------------
+  ## Reading and writing language configuration files --------------------------
 
   readLanguageFromConfigurationFile: (configFilePath) ->
     configDirPath = path.dirname(configFilePath)
