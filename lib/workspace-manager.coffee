@@ -12,6 +12,7 @@ LevelCodeEditor       = require('./level-code-editor')
 LevelStatusView       = require('./level-status-view')
 LevelSelectView       = require('./level-select-view')
 LanguageConfigView    = require('./language-config-view')
+TerminalPanelView     = require('./terminal-panel-view')
 TerminalView          = require('./terminal-view')
 Terminal              = require('./terminal')
 
@@ -30,6 +31,7 @@ class WorkspaceManager
     # create workspace view components
     @levelStatusView = new LevelStatusView
     @levelSelectView = new LevelSelectView
+    @terminalPanelView = new TerminalPanelView
     @languageConfigView = new LanguageConfigView
 
   cleanUpWorkspace: ->
@@ -39,6 +41,7 @@ class WorkspaceManager
     # destroy workspace view components
     @levelStatusView.destroy()
     @levelSelectView.destroy()
+    @terminalPanelView.destroy()
     @languageConfigView.destroy()
 
     # destroy status bar tiles
@@ -143,9 +146,11 @@ class WorkspaceManager
           @handleDidChangeGrammar(textEditor,newGrammar.name,grammar)
 
       language = languageRegistry.getLanguageForGrammar(newGrammar)
-      console.log language
       if workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
+        # TODO prevent grammar change when level code editor is executing
+        # if levelCodeEditor.isExecuting()
+        #   ...
         if language?
           levelCodeEditor.setLanguage(language)
         else
@@ -189,12 +194,15 @@ class WorkspaceManager
       event.abortKeyBinding()
 
   doToggleTerminal: (event) ->
-    event.abortKeyBinding()
+    if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
+      activeLevelCodeEditor.getTerminal().toggle()
+    else
+      event.abortKeyBinding()
 
   doStartExecution: (event) ->
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
       if activeLevelCodeEditor.getTextEditor().getPath()?
-        executionManager.startExecution(activeLevelCodeEditor)
+        activeLevelCodeEditor.startExecution()
       else
         console.log atom.showSaveDialogSync()
         # notificationUtils.addError notificationUtils.executionNotPossible,
@@ -203,7 +211,10 @@ class WorkspaceManager
       event.abortKeyBinding()
 
   doStopExecution: (event) ->
-    event.abortKeyBinding()
+    if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
+
+    else
+      event.abortKeyBinding()
 
   ## Consumed services ---------------------------------------------------------
 

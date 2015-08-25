@@ -12,33 +12,42 @@ class LevelStatusView extends View
     @div class: 'levels-view level-status inline-block', =>
       @a class: 'inline-block',
          href: '#',
-         click: 'handleDidClickLevelStatusLink',
+         click: 'doToggleLevelSelect',
          outlet: 'levelStatusLink'
 
   ## Initialization and destruction --------------------------------------------
 
   initialize: ->
+    # subscribe to the Levels workspace
     @workspaceSubscrs = new CompositeDisposable
-    @workspaceSubscrs.add workspace.onDidEnterWorkspace =>
-      @update(workspace.getActiveLevel())
-      @show()
+    @workspaceSubscrs.add workspace.onDidEnterWorkspace \
+      (activeLevelCodeEditor) =>
+        @updateOnDidEnterWorkspace(activeLevelCodeEditor)
     @workspaceSubscrs.add workspace.onDidExitWorkspace =>
-      @hide()
-    @workspaceSubscrs.add workspace.onDidChangeActiveLevel (activeLevel) =>
-      @update(activeLevel)
+        @updateOnDidExitWorkspace()
+    @workspaceSubscrs.add workspace.onDidChangeActiveLevel \
+      (activeLevel) =>
+        @updateOnDidChangeActiveLevelOfWorkspace(activeLevel)
 
   destroy: ->
     @workspaceSubscrs.dispose()
 
   ## Handling view events ------------------------------------------------------
 
-  handleDidClickLevelStatusLink: ->
+  doToggleLevelSelect: ->
     workspaceView = atom.views.getView(atom.workspace)
     atom.commands.dispatch(workspaceView,'levels:toggle-level-select')
 
   ## Updating this view --------------------------------------------------------
 
-  update: (activeLevel) ->
+  updateOnDidEnterWorkspace: (activeLevelCodeEditor) ->
+    @updateOnDidChangeActiveLevelOfWorkspace(activeLevelCodeEditor.getLevel())
+    @show()
+
+  updateOnDidExitWorkspace: ->
+    @hide()
+
+  updateOnDidChangeActiveLevelOfWorkspace: (@activeLevel) ->
     # TODO check is level name is to long, shorten the link?
     activeLevelName = activeLevel.getName()
     @levelStatusLink.text("(#{activeLevelName})")

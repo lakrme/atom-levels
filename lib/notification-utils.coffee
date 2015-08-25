@@ -12,7 +12,7 @@ module.exports =
     head ?= @defaultInfoHead
     important ?= false
 
-    if important or atom.config.get('notificationSettings.showAllInfos')
+    if important or atom.config.get('levels.showAllInfos')
       atom.notifications.addInfo head,
         detail: body
         dismissable: true
@@ -21,7 +21,7 @@ module.exports =
     head ?= @defaultSuccessHead
     important ?= false
 
-    if important or atom.config.get('notificationSettings.showAllSuccesses')
+    if important or atom.config.get('levels.showAllSuccesses')
       atom.notifications.addSuccess head,
         detail: body
         dismissable: true
@@ -30,7 +30,7 @@ module.exports =
     head ?= @defaultWarningHead
     important ?= false
 
-    if important or atom.config.get('notificationSettings.showAllWarnings')
+    if important or atom.config.get('levels.showAllWarnings')
       atom.notifications.addWarning head,
         detail: body
         dismissable: true
@@ -39,7 +39,7 @@ module.exports =
     head ?= @defaultErrorHead
     important ?= false
 
-    if important or atom.config.get('notificationSettings.showAllErrors')
+    if important or atom.config.get('levels.showAllErrors')
       atom.notifications.addError head,
         detail: body
         dismissable: true

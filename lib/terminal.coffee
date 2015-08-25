@@ -1,9 +1,5 @@
 {CompositeDisposable,Emitter} = require('atom')
 
-workspace                     = require('./workspace')
-
-TerminalBuffer                = require('./terminal-buffer')
-
 # ------------------------------------------------------------------------------
 
 module.exports =
@@ -13,127 +9,220 @@ class Terminal
 
   constructor: (params={}) ->
     @emitter = new Emitter
-    @buffer = new TerminalBuffer
 
-    @isExecuting = false
-    @isFolded = params.isFolded ? false
-    @visibleLines = params.visibleLines ? 20
-
-    @typedMessageBuffer = null
-    @typedMessageCurrentLineBuffer = ''
-
-    @levelCodeEditorsById = {}
-
-    # @workspaceSubscrs = new CompositeDisposable
-    # @workspaceSubscrs.add workspace.onDidEnterWorkspace =>
-    #
-    # @workspaceSubscrs.add \
-    #   workspace.onDidChangeActiveLevelCodeEditor (activeLevelCodeEditor) =>
-    #     if @levelCodeEditorsById[activeLevelCodeEditor.getId()]?
-    #       @updateFrameFor
+    # initialize terminal properties
+    @visible = params.visible ? true
+    @active = false
+    @minRows = 10
+    @rows = params.rows ? 20
+    @fontSize = params.fontSize ? 11
+    @charWidth = 7
+    @executing = false
+    @refCount = 0
 
   destroy: ->
+    @emitter.emit('did-destroy')
 
   ## Event subscription --------------------------------------------------------
 
-  onDidCreateNewLine: (callback) ->
-    @buffer.onDidCreateNewLine(callback)
+  onDidDestroy: (callback) ->
+    @emitter.on('did-destroy',callback)
 
-  onDidUpdateActiveLine: (callback) ->
-    @buffer.onDidUpdateActiveLine(callback)
+  observeIsVisible: (callback) ->
+    callback(@isVisible())
+    @onDidShow(=> callback(@isVisible()))
+    @onDidHide(=> callback(@isVisible()))
 
-  onDidEnterInput: (callback) ->
-    @buffer.onDidEnterInput(callback)
+  onDidShow: (callback) ->
+    @emitter.on('did-show',callback)
 
-  onWillReadTypedMessage: (callback) ->
-     @emitter.on('will-read-typed-message',callback)
+  onDidHide: (callback) ->
+    @emitter.on('did-hide',callback)
 
-  onDidReadTypedMessage: (callback) ->
-    @emitter.on('did-read-typed-message',callback)
+  onDidChangeSize: (callback) ->
+    @emitter.on('did-change-size',callback)
 
-  ## Managing associated level code editors ------------------------------------
+  onDidClear: (callback) ->
+    @emitter.on('did-clear',callback)
 
-  addLevelCodeEditor: (levelCodeEditor) ->
-    @levelCodeEditorsById[levelCodeEditor.getId()] = levelCodeEditor
+  onDidFocus: (callback) ->
+    @emitter.on('did-focus',callback)
 
-  removeLevelCodeEditor: (levelCodeEditor) ->
-    delete @levelCodeEditorsById[levelCodeEditor.getId()]
-  #   levelCodeEditorSubscrs = new CompositeDisposable
-  #   levelCodeEditorSubscrs.add levelCodeEditor.onDidActivate =>
-  #
-  #   levelCodeEditorSubscrs.add levelCodeEditor.onDidDeactivate =>
-  #
-  #   levelCodeEditorSubscrs.add levelCodeEditor.onDidDestroy =>
-  #
-  #   @levelCodeEditorSubscrsById[levelCodeEditor.getId()] = n
-  #
-  # removeLevelCodeEditor: (levelCodeEditor) ->
-  #   id = levelCodeEditor.getId()
-  #   if (levelCodeEditorSubscrs = @levelCodeEditorSubscrsById[id])?
-  #     if @activeLevelCodeEditor
-  #     levelCodeEditorSubscrs.dispose()
-  #     delete @levelCodeEditorSubscrsById[id]
+  onDidScrollToTop: (callback) ->
+    @emitter.on('did-scroll-to-top',callback)
 
-  ## Writing to the terminal ---------------------------------------------------
+  onDidScrollToBottom: (callback) ->
+    @emitter.on('did-scroll-to-bottom',callback)
 
-  write: (output) ->
-    @buffer.write(output)
+  observeIsExecuting: (callback) ->
+    callback(@isExecuting())
+    @onDidStartExecution((levelCodeEditor) => callback(@isExecuting()))
+    @onDidStopExecution((levelCodeEditor) => callback(@isExecuting()))
 
-  writeLn: (output) ->
-    @buffer.writeLn(output)
+  onDidStartExecution: (callback) ->
+    @emitter.on('did-start-execution',callback)
 
-  writeTypedMessage = (head,body,{type,icon,data}={}) ->
-        if head or body
-          type ?= "normal"
-          startTag = ''
-          endTag = ''
-          headElem = ''
-          bodyElem = ''
-          if type isnt 'normal' or icon or data?
-            startTag  = "<message type=\"#{type}\""
-            startTag += " icon=\"#{icon}\""          if icon
-            startTag += " data-#{key}=\"#{value}\""  for key,value of data
-            startTag += '>\n'
-            headElem  = "<head>\n#{head}\n</head>\n" if head
-            bodyElem  = "<body>\n#{body}\n</body>\n" if body
-            endTag    = "</message>\n"
-          typedMessage = startTag + headElem + bodyElem + endTag
-          @write(typedMessage)
+  onDidStopExecution: (callback) ->
+    @emitter.on('did-stop-execution',callback)
 
-  writeSubtleMessage = (head,body) ->
-    @writeTypedMessage(head,body,{type: 'subtle'})
+  ## Terminal interface properties ---------------------------------------------
 
-  writeInfoMessage = (head,body,{icon}={}) ->
-    @writeTypedMessage(head,body,{type: 'info',icon})
+  getMinSize: ->
+    @minRows
 
-  writeSuccessMessage = (head,body,{icon}={}) ->
-    @writeTypedMessage(head,body,{type: 'success',icon})
+  getSize: ->
+    @rows
 
-  writeWarningMessage = (head,body,{icon,row,col}={}) ->
-    data = {}
-    data.row = row if row
-    data.col = col if row and col
-    @writeTypedMessage(head,body,{type: 'warning',icon,data})
+  getLineHeight: ->
+    @fontSize + 4
 
-  writeErrorMessage = (head,body,{icon,row,col}={}) ->
-    data = {}
-    data.row = row if row
-    data.col = col if row and col
-    @writeTypedMessage(head,body,{type: 'error',icon,data})
+  getCharWidth: ->
+    @charWidth
 
-  ## ---------------------------------------------------------------------------
+  setMinSize: (@minRows) ->
 
-  # fold: ->
-  #
-  #
-  # writeLn: ()
-  #
-  # show: ->
+  setSize: (rows) ->
+    unless rows is @rows
+      if rows >= @minRows then @rows = rows else @rows = @minRows
+      @emitter.emit('did-change-size',@rows)
+
+  ## Terminal interface methods ----------------------------------------------
+
+  focus: ->
+    @emitter.emit('did-focus')
+
+  scrollToTop: ->
+    @emitter.emit('did-scroll-to-top')
+
+  scrollToBottom: ->
+    @emitter.emit('did-scroll-to-bottom')
+
+  ## Terminal methods ----------------------------------------------------------
+
+  clear: ->
+    # TODO clear the buffer
+    @emitter.emit('did-clear')
+
+  ## Level code execution ------------------------------------------------------
+
+  isExecuting: ->
+    @executing
+
+  startExecution: (levelCodeEditor) ->
+    unless @isExecuting()
+      @executing = true
+      # TODO actually start execution
+      @emitter.emit('did-start-execution',levelCodeEditor)
+
+  stopExecution: (levelCodeEditor) ->
+    if @isExecuting()
+      @executing = false
+      # TODO actually stop execution
+      @emitter.emit('did-stop-execution',levelCodeEditor)
+
+  ## Acquiring and releasing the terminal --------------------------------------
+
+  isRetained: ->
+    @refCount > 0
+
+  acquire: ->
+    @refCount++
+
+  release: ->
+    if @isRetained()
+      @refCount--
+      @destroy() unless @isRetained()
 
   ## Showing and hiding the terminal -------------------------------------------
 
+  isVisible: ->
+    @visible
+
+  toggle: ->
+    if @isVisible() then @hide() else @show()
+
   show: ->
+    unless @isVisible()
+      @visible = true
+      @emitter.emit('did-show')
 
   hide: ->
+    if @isVisible()
+      @visible = false
+      @emitter.emit('did-hide')
 
 # ------------------------------------------------------------------------------
+
+
+
+  # onDidCreateNewLine: (callback) ->
+  #   @buffer.onDidCreateNewLine(callback)
+  #
+  # onDidUpdateActiveLine: (callback) ->
+  #   @buffer.onDidUpdateActiveLine(callback)
+  #
+  # onDidEnterInput: (callback) ->
+  #   @buffer.onDidEnterInput(callback)
+  #
+  #
+  # onDidIncreaseFontSize: (callback) ->
+  #   @emitter.on('did-increase-font-size',callback)
+  #
+  # onDidDecreaseFontSize: (callback) ->
+  #   @emitter.on('did-decrease-font-size',callback)
+  #
+  # onDidChangeVisibleLines: (callback) ->
+  #   @emitter.on('did-change-visible-lines',callback)
+
+  # onWillReadTypedMessage: (callback) ->
+  #    @emitter.on('will-read-typed-message',callback)
+  #
+  # onDidReadTypedMessage: (callback) ->
+  #   @emitter.on('did-read-typed-message',callback)
+
+  ## Writing to the terminal ---------------------------------------------------
+
+  # write: (output) ->
+  #   @buffer.write(output)
+  #
+  # writeLn: (output) ->
+  #   @buffer.writeLn(output)
+
+  # writeTypedMessage = (head,body,{type,icon,data}={}) ->
+  #       if head or body
+  #         type ?= "normal"
+  #         startTag = ''
+  #         endTag = ''
+  #         headElem = ''
+  #         bodyElem = ''
+  #         if type isnt 'normal' or icon or data?
+  #           startTag  = "<message type=\"#{type}\""
+  #           startTag += " icon=\"#{icon}\""          if icon
+  #           startTag += " data-#{key}=\"#{value}\""  for key,value of data
+  #           startTag += '>\n'
+  #           headElem  = "<head>\n#{head}\n</head>\n" if head
+  #           bodyElem  = "<body>\n#{body}\n</body>\n" if body
+  #           endTag    = "</message>\n"
+  #         typedMessage = startTag + headElem + bodyElem + endTag
+  #         @write(typedMessage)
+  #
+  # writeSubtleMessage = (head,body) ->
+  #   @writeTypedMessage(head,body,{type: 'subtle'})
+  #
+  # writeInfoMessage = (head,body,{icon}={}) ->
+  #   @writeTypedMessage(head,body,{type: 'info',icon})
+  #
+  # writeSuccessMessage = (head,body,{icon}={}) ->
+  #   @writeTypedMessage(head,body,{type: 'success',icon})
+  #
+  # writeWarningMessage = (head,body,{icon,row,col}={}) ->
+  #   data = {}
+  #   data.row = row if row
+  #   data.col = col if row and col
+  #   @writeTypedMessage(head,body,{type: 'warning',icon,data})
+  #
+  # writeErrorMessage = (head,body,{icon,row,col}={}) ->
+  #   data = {}
+  #   data.row = row if row
+  #   data.col = col if row and col
+  #   @writeTypedMessage(head,body,{type: 'error',icon,data})

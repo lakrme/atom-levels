@@ -10,7 +10,7 @@ class Workspace
     @emitter = new Emitter
     @levelCodeEditorsById = {}
     @activeLevelCodeEditor = null
-    @activeLevelCodeEditorSubscrs= new CompositeDisposable
+    @activeLevelCodeEditorSubscrs = new CompositeDisposable
 
   ## Event subscription --------------------------------------------------------
 
@@ -37,11 +37,14 @@ class Workspace
   onDidChangeActiveLevelCodeEditor: (callback) ->
     @emitter.on('did-change-active-level-code-editor',callback)
 
-  oinDidChangeActiveLanguage: (callback) ->
+  onDidChangeActiveLanguage: (callback) ->
     @emitter.on('did-change-active-language',callback)
 
   onDidChangeActiveLevel: (callback) ->
     @emitter.on('did-change-active-level',callback)
+
+  onDidChangeActiveTerminal: (callback) ->
+    @emitter.on('did-change-active-terminal',callback)
 
   ## Workspace properties ------------------------------------------------------
 
@@ -58,7 +61,7 @@ class Workspace
   destroyLevelCodeEditor: (levelCodeEditor) ->
     delete @levelCodeEditorsById[levelCodeEditor.getId()]
     levelCodeEditor.destroy()
-    @emitter.emit('did-destroy-level-code-editor')
+    @emitter.emit('did-destroy-level-code-editor',levelCodeEditor)
     console.log @levelCodeEditorsById
 
   getLevelCodeEditorForTextEditor: (textEditor) ->
@@ -76,10 +79,13 @@ class Workspace
     @activeLevelCodeEditor
 
   getActiveLanguage: ->
-    @activeLevelCodeEditor.getLanguage()
+    @activeLevelCodeEditor?.getLanguage()
 
   getActiveLevel: ->
-    @activeLevelCodeEditor.getLevel()
+    @activeLevelCodeEditor?.getLevel()
+
+  getActiveTerminal: ->
+    @activeLevelCodeEditor?.getTerminal()
 
   setActiveLevelCodeEditor: (levelCodeEditor) ->
     if @isActive()
@@ -88,15 +94,27 @@ class Workspace
         oldLanguage = @activeLevelCodeEditor.getLanguage()
         newLevel = levelCodeEditor.getLevel()
         oldLevel = @activeLevelCodeEditor.getLevel()
+        # NOTE currently a level code editor change is also a terminal change
+        # but in the future it might be possible to alternatively share one
+        # terminal with all level code editors
+        newTerminal = levelCodeEditor.getTerminal()
+        oldTerminal = @activeLevelCodeEditor.getTerminal()
+        # -------------------------------------------------------------------
         @unsubscribeFromActiveLevelCodeEditor()
         @activeLevelCodeEditor = levelCodeEditor
         if newLanguage.getName() isnt oldLanguage.getName()
           @emitter.emit('did-change-active-level',newLevel)
-          @emitter.emit('did-change-active-language',{newLanguage,newLevel})
+          @emitter.emit 'did-change-active-language',
+            activeLanguage: newLanguage
+            activeLevel: newLevel
         else if newLevel.getName() isnt oldLevel.getName()
           @emitter.emit('did-change-active-level',newLevel)
         @subscribeToActiveLevelCodeEditor()
-        @emitter.emit('did-change-active-level-code-editor',@activeLevelCodeEditor)
+        # NOTE see above
+        @emitter.emit('did-change-active-terminal',newTerminal)
+        # --------------
+        @emitter.emit('did-change-active-level-code-editor',\
+        @activeLevelCodeEditor)
     else
       @activeLevelCodeEditor = levelCodeEditor
       @subscribeToActiveLevelCodeEditor()
@@ -110,8 +128,10 @@ class Workspace
 
   subscribeToActiveLevelCodeEditor: ->
     @activeLevelCodeEditorSubscrs.add \
-      @activeLevelCodeEditor.onDidChangeLanguage (language,level) =>
-        @emitter.emit('did-change-active-language',{language,level})
+      @activeLevelCodeEditor.onDidChangeLanguage ({language,level}) =>
+        @emitter.emit 'did-change-active-language',
+          activeLanguage: language
+          activeLevel: level
     @activeLevelCodeEditorSubscrs.add \
       @activeLevelCodeEditor.onDidChangeLevel (level) =>
         @emitter.emit('did-change-active-level',level)

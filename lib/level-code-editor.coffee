@@ -15,8 +15,7 @@ class LevelCodeEditor
     @emitter = new Emitter
     @setLanguage(language,level)
     @terminal ?= new Terminal
-    @terminal.addLevelCodeEditor(@)
-    @active = false
+    @terminal.acquire()
 
     # subscribe to text buffer
     @willSaveSubscr = @textEditor.getBuffer().onWillSave =>
@@ -24,12 +23,21 @@ class LevelCodeEditor
 
   destroy: ->
     @willSaveSubscr.dispose()
+    @terminal.release()
     @emitter.emit('did-destroy')
 
   ## Event subscription --------------------------------------------------------
 
+  observeLanguage: (callback) ->
+    callback({language: @language,level: @level})
+    @onDidChangeLanguage(callback)
+
   onDidChangeLanguage: (callback) ->
     @emitter.on('did-change-language',callback)
+
+  observeLevel: (callback) ->
+    callback(@level)
+    @onDidChangeLevel(callback)
 
   onDidChangeLevel: (callback) ->
     @emitter.on('did-change-level',callback)
@@ -37,7 +45,18 @@ class LevelCodeEditor
   onDidDestroy: (callback) ->
     @emitter.on('did-destroy',callback)
 
-  ## Text editor properties and methods ----------------------------------------
+  onDidStartExecution: (callback) ->
+    @terminal.onDidStartExecution (levelCodeEditor) =>
+      callback() if levelCodeEditor.getId() is @getId()
+
+  onDidStopExecution: (callback) ->
+    @terminal.onDidStopExecution (levelCodeEditor) =>
+      callback() if levelCodeEditor.getId() is @getId()
+
+  ## Associated entities and derived properties and methods --------------------
+
+  getTextEditor: ->
+    @textEditor
 
   getId: ->
     @textEditor.id
@@ -45,13 +64,11 @@ class LevelCodeEditor
   getPath: ->
     @textEditor.getPath()
 
-  ## Associated entities -------------------------------------------------------
-
-  getTextEditor: ->
-    @textEditor
-
   getLanguage: ->
     @language
+
+  getExecutionMode: ->
+    @language.getExecutionMode()
 
   getLevel: ->
     @level
@@ -59,10 +76,19 @@ class LevelCodeEditor
   getTerminal: ->
     @terminal
 
-  ## Writing language informations to the file header --------------------------
+  isExecuting: ->
+    @terminal.isExecuting()
+
+  startExecution: ->
+    @terminal.startExecution(@)
+
+  stopExecution: ->
+    @terminal.stopExecution(@)
+
+  ## Writing language information to the file header ---------------------------
 
   writeLanguageInformationFileHeaderIf: (condition) ->
-    configKey = 'levels.workspaceSettings.whenToWriteFileHeader'
+    configKey = 'levels.whenToWriteFileHeader'
     whenToWriteFileHeader = atom.config.get(configKey)
     if whenToWriteFileHeader is condition
       workspaceUtils.deleteLanguageInformationFileHeader(@textEditor)
@@ -77,7 +103,9 @@ class LevelCodeEditor
     else
       @language = language
       @setLevel(level ? @language.getLevelOnInitialization())
-      @emitter.emit('did-change-language',{@language,@level})
+      @emitter.emit 'did-change-language',
+        language: @language
+        level: @level
 
   setLevel: (level) ->
     if @language.hasLevel(level)

@@ -2,165 +2,167 @@
 
 .levels-view {
 
-  &.control-panel {
-    @control-bar-height: 26px;
-
-    cursor: default;
-    height: @control-bar-height;
-    min-height: @control-bar-height;
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-    z-index: 2;
-    -webkit-user-select: none;
-
-    .control-panel-resize-handle {
-      cursor: row-resize;
-      height: 10px;
-      left: 0;
-      position: absolute;
-      right: 0;
-      top: -5px;
-      z-index: 4;
-    }
-
-    .control-bar {
-      background-color: @tool-panel-background-color;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
-      height: @control-bar-height;
-      left: 0;
-      padding: 5px 12.5px;
-      position: absolute;
-      right: 0;
-      top: 0;
-      z-index: 3;
-
-      a, a:focus, a:hover {
-        color: @text-color;
-        outline: 0;
-      }
-
-      .control-bar-separator {
-        border-left: 1px solid @text-color-subtle;
-        display: inline;
-      }
-      .control-bar-left {
-        display: inline;
-        width: 50%;
-        a {margin-right: 10px;}
-        .control-bar-separator {margin-right: 10px;}
-        .terminal-controls {display: inline;}
-      }
-      .control-bar-right {
-        display: inline;
-        float: right;
-        a {margin-left: 10px;}
-        .control-bar-separator {margin-left: 10px;}
-        .execution-controls {
-          display: inline;
-          a {text-decoration: none;}
-        }
-      }
-      .icon::before {
-        font-size: 14px;
-        height: 14px;
-        margin-right: 0;
-        width: 14px;
-      }
-    }
-
-    .terminal-frame {
-      @char-width: 7px;
-      @line-height: 15px;
-      @terminal-background-color: #000;
-      @terminal-padding-top: @control-bar-height+5px;
-      @terminal-padding-right: 12.5px;
-      @terminal-padding-bottom: 5px;
-      @terminal-padding-left: 12.5px;
-
-      background-color: @terminal-background-color;
-      height: 100%;
-      padding-top: @terminal-padding-top;
-      padding-right: @terminal-padding-right;
-      padding-bottom: @terminal-padding-bottom;
-      padding-left: @terminal-padding-left;
-      position: relative;
-
-      .terminal {
-        color: #fff;
-        font-family: Menlo;
-        height: 100%;
-        overflow-x: auto;
-        position: relative;
-        z-index: 1;
-
-        .cursor {
-          background-color: #fff;
-          height: @line-height;
-          left: 0;
-          position: absolute;
-          top: 0;
-          width: @char-width;
-        }
-
-        .line {
-          // font-weight: bold;
-          height: @line-height;
-          white-space: pre;
-
-          a {
-            &.warning-link {color: @text-color-warning;}
-            &.error-link {color: @text-color-error;}
-            // font-weight: bold;
-            // text-decoration: none;
-          }
-
-          .text-subtle,
-          .text-info,
-          .text-success,
-          .text-warning,
-          .text-error  {
-            font-weight: bold;
-          }
-
-          .icon::before {
-            font-size: 14px;
-            height: 14px;
-            margin: 0;
-            width: 14px;
-          }
-        }
-      }
-    }
-  }
-
-  &.language-config {
-    padding: 20px;
-    atom-text-editor {background-color: @background-color-highlight;}
-    .section-container {
-      margin-bottom: 20px;
-      .section-heading {
-        color: @text-color-highlight;
-        font-size: 14px;
-        font-weight: bold;
-      }
-      .section-body {
-        .control-group {
-          margin-top: 15px;
-          .control-label {
-            margin-bottom: 5px;
-            .config-title {font-size: 12px;}
-            .config-description {color: @text-color-subtle;}
-          }
-        }
-      }
-    }
-  }
-
   &.level-status {
     a, a:focus, a:hover {
       color: @text-color;
       outline: 0;
     }
   }
+
+  &.terminal-panel {
+    background-color: @tool-panel-background-color;
+    border-top: 1px solid @tool-panel-border-color;
+    bottom: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+    left: 0;
+    position: absolute;
+    width: 100%;
+    -webkit-user-select: none;
+
+    .resize-handle {
+      cursor: row-resize;
+      height: 10px;
+      left: 0;
+      position: absolute;
+      right: 0;
+      top: -5px;
+      z-index: 1;
+    }
+
+    .control-bar {
+      height: 26px;
+      padding: 5px 12.5px;
+
+      a, a:focus, a:hover {
+        color: @text-color;
+        outline: 0;
+
+        .icon::before {
+          font-size: 14px;
+          height: 14px;
+          margin-right: 0;
+          width: 14px;
+        }
+      }
+
+      .control-bar-left {
+        display: inline;
+        overflow-x: scroll;
+        width: 50%;
+        a {margin-right: 10px;}
+        .control-bar-separator {margin-right: 10px;}
+      }
+
+      .control-bar-right {
+        display: inline;
+        overflow-x: scroll;
+        float: right;
+        a {margin-left: 10px;}
+        .control-bar-separator {margin-left: 10px;}
+      }
+
+      .control-group {
+        display: inline;
+
+        &.execution-controls {
+          a {text-decoration: none;}
+        }
+      }
+
+      .control-bar-separator {
+        border-left: 1px solid @text-color-subtle;
+        display: inline;
+      }
+    }
+
+    .terminal {
+      background-color: #000;
+      color: #fff;
+      font-family: Menlo;
+      overflow: scroll;
+      padding: 0 12.5px 0 12.5px;
+
+      .cursor {
+        background-color: #fff;
+        position: absolute;
+      }
+
+    }
+  }
 }
+  // &.control-panel {
+  //   @control-bar-height: 26px;
+  //
+  //   cursor: default;
+  //   height: @control-bar-height;
+  //   min-height: @control-bar-height;
+  //   overflow: hidden;
+  //   position: relative;
+  //   width: 100%;
+  //   z-index: 2;
+  //   -webkit-user-select: none;
+  //
+  //   .terminal-frame {
+  //     @char-width: 7px;
+  //     @line-height: 15px;
+  //     @terminal-background-color: #000;
+  //     @terminal-padding-top: @control-bar-height+5px;
+  //     @terminal-padding-right: 12.5px;
+  //     @terminal-padding-bottom: 5px;
+  //     @terminal-padding-left: 12.5px;
+  //
+  //     background-color: @terminal-background-color;
+  //     height: 100%;
+  //     padding-top: @terminal-padding-top;
+  //     padding-right: @terminal-padding-right;
+  //     padding-bottom: @terminal-padding-bottom;
+  //     padding-left: @terminal-padding-left;
+  //     position: relative;
+  //
+  //     .terminal {
+  //       color: #fff;
+  //       font-family: Menlo;
+  //       height: 100%;
+  //       overflow-x: auto;
+  //       position: relative;
+  //       z-index: 1;
+  //
+  //       .cursor {
+  //         background-color: #fff;
+  //         height: @line-height;
+  //         left: 0;
+  //         position: absolute;
+  //         top: 0;
+  //         width: @char-width;
+  //       }
+  //
+  //       .line {
+  //         // font-weight: bold;
+  //         height: @line-height;
+  //         white-space: pre;
+  //
+  //         a {
+  //           &.warning-link {color: @text-color-warning;}
+  //           &.error-link {color: @text-color-error;}
+  //           // font-weight: bold;
+  //           // text-decoration: none;
+  //         }
+  //
+  //         .text-subtle,
+  //         .text-info,
+  //         .text-success,
+  //         .text-warning,
+  //         .text-error  {
+  //           font-weight: bold;
+  //         }
+  //
+  //         .icon::before {
+  //           font-size: 14px;
+  //           height: 14px;
+  //           margin: 0;
+  //           width: 14px;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }

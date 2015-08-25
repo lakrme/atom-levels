@@ -18,8 +18,8 @@ class LevelSelectView extends SelectListView
     @cancel()
 
   cancelled: ->
-    @levelSelectPanel?.destroy()
-    @levelSelectPanel = null
+    @modalPanel?.destroy()
+    @modalPanel = null
 
   ## Overwritten list view methods ---------------------------------------------
 
@@ -76,12 +76,15 @@ class LevelSelectView extends SelectListView
   ## Showing and hiding this view ----------------------------------------------
 
   toggle: ->
-    if @levelSelectPanel? then @hide() else @show()
+    if @modalPanel?
+      @hide()
+    else
+      @update(workspace.getActiveLevelCodeEditor())
+      @show()
 
   show: ->
-    @update(workspace.getActiveLevelCodeEditor())
     @storeFocusedElement()
-    @levelSelectPanel ?= atom.workspace.addModalPanel(item: @)
+    @modalPanel ?= atom.workspace.addModalPanel(item: @)
     @focusFilterEditor()
 
   hide: ->
