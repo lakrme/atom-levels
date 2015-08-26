@@ -26,7 +26,11 @@ class WorkspaceManager
     # add view providers
     @viewProviders = new CompositeDisposable
     @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
-      new TerminalView(terminal)
+      terminalView = new TerminalView(terminal)
+      # initialize the terminal
+      terminal.newLine()
+      terminal.writeLn('Welcome to the Levels terminal!')
+      terminalView
 
     # create workspace view components
     @levelStatusView = new LevelStatusView
@@ -57,12 +61,14 @@ class WorkspaceManager
 
   activateCommandHandlers: ->
     @commandHandlers = atom.commands.add 'atom-workspace',
-      'levels:install-languages': (event) => @doInstallLanguages(event)
-      'levels:uninstall-languages': (event) => @doUninstallLanguages(event)
-      'levels:toggle-level-select': (event) => @doToggleLevelSelect(event)
-      'levels:toggle-terminal': (event) => @doToggleTerminal(event)
-      'levels:start-execution': (event) => @doStartExecution(event)
-      'levels:stop-execution': (event) => @doStopExecution(event)
+      'levels:install-languages': @doInstallLanguages
+      'levels:uninstall-languages': @doUninstallLanguages
+      'levels:toggle-level-select': @doToggleLevelSelect
+      'levels:toggle-terminal': @doToggleTerminal
+      'levels:increase-terminal-font-size': @doIncreaseTerminalFontSize
+      'levels:decrease-terminal-font-size': @doDecreaseTerminalFontSize
+      'levels:start-execution': @doStartExecution
+      'levels:stop-execution': @doStopExecution
 
   deactivateCommandHandlers: ->
     @commandHandlers.dispose()
@@ -180,26 +186,38 @@ class WorkspaceManager
 
   ## Command handlers ----------------------------------------------------------
 
-  doInstallLanguages: (event) ->
+  doInstallLanguages: (event) =>
     atom.pickFolder (paths) ->
       languageInstaller.installLanguages(paths) if paths?
 
-  doUninstallLanguages: (event) ->
+  doUninstallLanguages: (event) =>
     languageInstaller.uninstallLanguages([])
 
-  doToggleLevelSelect: (event) ->
+  doToggleLevelSelect: (event) =>
     if workspace.isActive()
       @levelSelectView.toggle()
     else
       event.abortKeyBinding()
 
-  doToggleTerminal: (event) ->
+  doToggleTerminal: (event) =>
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
       activeLevelCodeEditor.getTerminal().toggle()
     else
       event.abortKeyBinding()
 
-  doStartExecution: (event) ->
+  doIncreaseTerminalFontSize: (event) =>
+    if (activeTerminal = workspace.getActiveTerminal())?
+      activeTerminal.increaseFontSize()
+    else
+      event.abortKeyBinding()
+
+  doDecreaseTerminalFontSize: (event) =>
+    if (activeTerminal = workspace.getActiveTerminal())?
+      activeTerminal.decreaseFontSize()
+    else
+      event.abortKeyBinding()
+
+  doStartExecution: (event) =>
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
       if activeLevelCodeEditor.getTextEditor().getPath()?
         activeLevelCodeEditor.startExecution()
@@ -210,7 +228,7 @@ class WorkspaceManager
     else
       event.abortKeyBinding()
 
-  doStopExecution: (event) ->
+  doStopExecution: (event) =>
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
 
     else

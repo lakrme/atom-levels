@@ -1,6 +1,8 @@
 {CompositeDisposable} = require('atom')
 {$,View}              = require('atom-space-pen-views')
 
+terminalUtils         = require('./terminal-utils')
+
 workspace             = require('./workspace').getInstance()
 
 # ------------------------------------------------------------------------------
@@ -34,10 +36,14 @@ class TerminalPanelView extends View
                 @text 'Clear'
             @a href: '#', click: 'doScrollToTopOfTerminal', =>
               @span class: 'icon icon-move-up', =>
-                @text 'Scroll To Top'
+                @text 'To Top'
             @a href: '#', click: 'doScrollToBottomOfTerminal', =>
               @span class: 'icon icon-move-down', =>
-                @text 'Scroll To Bottom'
+                @text 'To Bottom'
+            # @a href: '#', click: 'doIncreaseTerminalFontSize', =>
+            #   @span class: 'icon icon-diff-added'
+            # @a href: '#', click: 'doDecreaseTerminalFontSize', =>
+            #   @span class: 'icon icon-diff-removed'
 
         @div class: 'control-bar-right', =>
 
@@ -61,6 +67,9 @@ class TerminalPanelView extends View
             @a href: '#', =>
               @span class: 'icon icon-gear', =>
                 @text 'Language Configuration'
+
+      @div class: 'terminal-container', outlet: 'terminalContainer'
+      @div class: 'terminal-info', outlet: 'terminalInfo'
 
   ## Initialization and destruction --------------------------------------------
 
@@ -99,7 +108,8 @@ class TerminalPanelView extends View
     lineHeight = @activeTerminal.getLineHeight()
     sizeDiff = (heightDiff - (heightDiff % lineHeight)) / lineHeight
     if sizeDiff isnt 0
-      @activeTerminal.setSize(@activeTerminal.getSize()+sizeDiff)
+      size = @activeTerminal.getSize()
+      @activeTerminal.setSize(size+sizeDiff)
 
   resizeToMinSize: =>
     minSize = @activeTerminal.getMinSize()
@@ -122,6 +132,12 @@ class TerminalPanelView extends View
   doScrollToBottomOfTerminal: ->
     @activeTerminal.scrollToBottom()
 
+  doIncreaseTerminalFontSize: ->
+    @activeTerminal.increaseFontSize()
+
+  doDecreaseTerminalFontSize: ->
+    @activeTerminal.decreaseFontSize()
+
   doStartExecution: ->
     workspaceView = atom.views.getView(atom.workspace)
     atom.commands.dispatch(workspaceView,'levels:start-execution')
@@ -139,12 +155,19 @@ class TerminalPanelView extends View
     @updateOnDidChangeActiveTerminalOfWorkspace(@activeTerminal)
     @show()
 
+    # set up window event handlers
+    @on 'mousedown', '.resize-handle', => @resizeStarted()
+    @on 'dblclick', '.resize-handle', => @resizeToMinSize()
+
   updateOnDidExitWorkspace: ->
     @hide()
     @activeTerminalSubscrs.dispose()
     @activeLanguageSubscrs.dispose()
     @activeTerminal = null
     @activeLanguage = null
+
+    # remove event handlers
+    @off()
 
   updateOnDidChangeActiveLanguageOfWorkspace: (@activeLanguage) ->
     @activeLanguageSubscrs?.dispose()
@@ -158,13 +181,20 @@ class TerminalPanelView extends View
     @activeTerminalSubscrs.add @activeTerminal.observeIsVisible \
       (isVisible) =>
         @updateOnDidChangeIsVisibleOfActiveTerminal(isVisible)
+    # @activeTerminalSubscrs.add @activeTerminal.onDidChangeSize \
+    #   (size) => @updateOnDidChangePropertyOfActiveTerminal
+    #     name: 'Size'
+    #     value: size
+    # @activeTerminalSubscrs.add @activeTerminal.onDidChangeFontSize \
+    #   (fontSize) => @updateOnDidChangePropertyOfActiveTerminal
+    #     name: 'Font size'
+    #     value: fontSize
     @activeTerminalSubscrs.add @activeTerminal.observeIsExecuting \
       (isExecuting) =>
         @updateOnDidChangeIsExecutingOfActiveTerminal(isExecuting)
 
-    lastChild = @children().last()
-    lastChild.remove() if lastChild.hasClass('terminal')
-    @append(atom.views.getView(@activeTerminal))
+    @terminalContainer.empty()
+    @terminalContainer.append(atom.views.getView(@activeTerminal))
 
   updateOnDidChangeActiveLanguage: ->
     # update terminal panel for current execution mode
@@ -185,12 +215,17 @@ class TerminalPanelView extends View
       @hideTerminalLink.show()
       @separatorLeft.css('display','inline')
       @terminalControls.css('display','inline')
+      # add terminal event handlers
+      @on 'keydown', (event) =>
+        terminalUtils.dispatchKeyEvent(@activeTerminal,event)
     else
       @resizeHandle.hide()
       @showTerminalLink.show()
       @hideTerminalLink.hide()
       @separatorLeft.hide()
       @terminalControls.hide()
+      # remove terminal event handlers
+      @off('keydown')
 
   updateOnDidChangeIsExecutingOfActiveTerminal: (isExecuting) ->
     if isExecuting
@@ -206,20 +241,25 @@ class TerminalPanelView extends View
         @startExecutionLink.hide()
         @noExecutionModeAvailableInfo.show()
 
+  # updateOnDidChangePropertyOfActiveTerminal: ({name,value}) ->
+  #   @terminalInfo.empty()
+  #   @terminalInfo.append("#{name}: #{value}")
+  #   if @terminalInfo.is(':visible')
+  #     @terminalInfo.stop(true)
+  #     @terminalInfo.css('opacity',100)
+  #   else
+  #     @terminalInfo.show()
+  #   @terminalInfo.fadeOut(1000)
+
   ## Showing and hiding the terminal panel -------------------------------------
 
   show: ->
     unless @bottomPanel?
       @bottomPanel = atom.workspace.addBottomPanel(item: @)
 
-      # set up window event handlers
-      @on 'mousedown', '.resize-handle', => @resizeStarted()
-      @on 'dblclick', '.resize-handle', => @resizeToMinSize()
-
   hide: ->
     if @bottomPanel?
       @bottomPanel.destroy()
       @bottomPanel = null
-      @off()
 
 # ------------------------------------------------------------------------------

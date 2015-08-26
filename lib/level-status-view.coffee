@@ -50,6 +50,7 @@ class LevelStatusView extends View
   updateOnDidChangeActiveLevelOfWorkspace: (@activeLevel) ->
     # TODO check is level name is to long, shorten the link?
     activeLevelName = activeLevel.getName()
+    # ------------------------------------------------------
     @levelStatusLink.text("(#{activeLevelName})")
     @levelStatusLink.attr('data-level',activeLevelName)
 

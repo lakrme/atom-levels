@@ -1,11 +1,13 @@
-{Emitter} = require 'atom'
+{Emitter} = require('atom')
 
 # ------------------------------------------------------------------------------
 
 module.exports =
 class TerminalBuffer
 
-  constructor: ({@view,prompt,commands,commandNotFound}={}) ->
+  ## Construction --------------------------------------------------------------
+
+  constructor: ({prompt,commands,commandNotFound}={}) ->
     @emitter = new Emitter
 
     # assign default values to the root scope attributes
@@ -13,10 +15,8 @@ class TerminalBuffer
     commands ?= {}
     commandNotFound ?= (input) -> @writeLn("#{input}: command not found")
 
-    # @history = []
+    @history = []
     @scopes = []
-    @handlers =
-      'did-enter-input': []
 
     # enter the root scope
     @enterScope
@@ -24,16 +24,16 @@ class TerminalBuffer
       commands: commands
       commandNotFound: commandNotFound
 
-    # create the inital terminal line
-    @newLine()
-
   ## Event subscription --------------------------------------------------------
 
-  onDidCreateNewActiveLine: (callback) ->
+  onDidCreateNewLine: (callback) ->
     @emitter.on('did-create-new-line',callback)
 
   onDidUpdateActiveLine: (callback) ->
     @emitter.on('did-update-active-line',callback)
+
+  onDidEnterInput: (callback) ->
+    @emitter.on('did-enter-input',callback)
 
   onDidEnterScope: (callback) ->
     @emitter.on('did-enter-scope',callback)
@@ -41,35 +41,39 @@ class TerminalBuffer
   onDidExitScope: (callback) ->
     @emitter.on('did-exit-scope',callback)
 
-  ## ---------------------------------------------------------------------------
+  onDidClear: (callback) ->
+    @emitter.on('did-clear',callback)
+
+  ## Mutating the buffer -------------------------------------------------------
 
   newLine: (prompt=@prompt) ->
-    # @history.push(@activeLineOutput+@activeLineInput)
+    if @activeLineOutput? and @activeLineInput?
+      @history.push(@activeLineOutput+@activeLineInput)
     @activeLineOutput = ''
     @activeLineInput = ''
     @activeLineInputCursorPos = 0
     @promptIsActive = false
-    @newLineInView()
+    @didCreateNewLine()
     @inputHistoryIndex = -1
 
     if prompt
       @activeLineOutput = "#{prompt} "
       @promptIsActive = true
-      @updateActiveLineInView()
+      @didUpdateActiveLine()
 
   addStringToOutput: (string) ->
     if @promptIsActive
       @activeLineOutput = ''
       @promptIsActive = false
     @activeLineOutput += string
-    @updateActiveLineInView()
+    @didUpdateActiveLine()
 
   addStringToInput: (string) ->
     prefix = @activeLineInput.slice(0,@activeLineInputCursorPos)
     suffix = @activeLineInput.substr(@activeLineInputCursorPos)
     @activeLineInput = prefix + string + suffix
     @activeLineInputCursorPos += string.length
-    @updateActiveLineInView()
+    @didUpdateActiveLine()
 
   removeCharFromInput: ->
     unless @activeLineInputCursorPos is 0
@@ -77,7 +81,7 @@ class TerminalBuffer
       suffix = @activeLineInput.substr(@activeLineInputCursorPos)
       @activeLineInput = prefix + suffix
       @activeLineInputCursorPos--
-      @updateActiveLineInView()
+      @didUpdateActiveLine()
 
   ## Browsing the input history ------------------------------------------------
 
@@ -86,7 +90,7 @@ class TerminalBuffer
       @inputHistoryIndex++
       @activeLineInput = @inputHistory[@inputHistoryIndex]
       @activeLineInputCursorPos = @activeLineInput.length
-      @updateActiveLineInView()
+      @didUpdateActiveLine()
 
   showSubsequentInput: ->
     switch
@@ -94,40 +98,45 @@ class TerminalBuffer
         @activeLineInput = ''
         @activeLineInputCursorPos = 0
         @inputHistoryIndex--
-        @updateActiveLineInView()
+        @didUpdateActiveLine()
       when @inputHistoryIndex > 0
         @activeLineInput = @inputHistory[@inputHistoryIndex-1]
         @activeLineInputCursorPos = @activeLineInput.length
         @inputHistoryIndex--
-        @updateActiveLineInView()
+        @didUpdateActiveLine()
 
   ## Moving the input cursor ---------------------------------------------------
 
   moveInputCursorLeft: ->
     if @activeLineInputCursorPos > 0
       @activeLineInputCursorPos--
-      @updateActiveLineInView()
+      @didUpdateActiveLine()
 
   moveInputCursorRight: ->
     if @activeLineInputCursorPos < @activeLineInput.length
       @activeLineInputCursorPos++
-      @updateActiveLineInView()
+      @didUpdateActiveLine()
 
   ## Entering the current input ------------------------------------------------
 
   enterInput: ->
     input = @activeLineInput.trim()
     @newLine()
-    handler(input) for handler in @handlers['did-enter-input']
+    @didEnterInput(input)
     if input
       @inputHistory.unshift(input) unless @inputHistory[0] is input
       if Object.keys(@commands).length isnt 0
-        if (command = @commands[input])?
-          command()
+        args = input.split(' ')
+        commandName = args.shift()
+        if (command = @commands[commandName])?
+          if args.length is 0
+            command(@)
+          else
+            command(@,args)
         else
-          @commandNotFound(input)
+          @commandNotFound(commandName)
 
-  ## Useful interface methods --------------------------------------------------
+  ## Interface methods ---------------------------------------------------------
 
   write: (output) ->
     lines = output.split('\n')
@@ -143,6 +152,10 @@ class TerminalBuffer
   writeLn: (output) ->
     @write(output)
     @newLine()
+
+  clear: ->
+    @history = []
+    @emitter.emit('did-clear')
 
   ## Entering and exiting scopes -----------------------------------------------
 
@@ -185,26 +198,18 @@ class TerminalBuffer
         @addStringToOutput("#{@prompt} ")
         @promptIsActive = true
 
-  ## Attaching and detaching event handlers ------------------------------------
+  ## Emitting events -----------------------------------------------------------
 
-  on: (event,handler) ->
-    @handlers[event].push(handler)
-
-  off: (event) ->
-    if event?
-      @handlers[event] = [] if @handlers[event]?
-    else
-      @handlers[event] = [] for event of @handlers
-
-  ## Updating the view ---------------------------------------------------------
-
-  newLineInView: ->
+  didCreateNewLine: ->
     @emitter.emit('did-create-new-line')
 
-  updateActiveLineInView: ->
+  didUpdateActiveLine: ->
     @emitter.emit 'did-update-active-line',
       output: @activeLineOutput
       input: @activeLineInput
       inputCursorPos: @activeLineInputCursorPos
+
+  didEnterInput: (input) ->
+    @emitter.emit('did-enter-input',input)
 
 # ------------------------------------------------------------------------------

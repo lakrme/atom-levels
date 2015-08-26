@@ -75,94 +75,40 @@
       }
     }
 
-    .terminal {
+    .terminal-container {
       background-color: #000;
-      color: #fff;
-      font-family: Menlo;
-      overflow: scroll;
       padding: 0 12.5px 0 12.5px;
 
-      .cursor {
-        background-color: #fff;
-        position: absolute;
-      }
+      .terminal {
+        color: #fff;
+        font-family: Menlo;
+        overflow: scroll;
+        position: relative;
 
+        .cursor {
+          background-color: #fff;
+          position: absolute;
+        }
+
+        .line {
+          white-space: pre;
+        }
+      }
+    }
+
+    .terminal-info {
+      background-color: #000;
+      border: 1px solid @text-color;
+      // border-radius: 2px;
+      bottom: 10px;
+      color: @text-color;
+      display: none;
+      height: 25px;
+      line-height: 15px;
+      padding: 4px 12.5px;
+      position: absolute;
+      right: 10px;
+      // width: 100px;
     }
   }
 }
-  // &.control-panel {
-  //   @control-bar-height: 26px;
-  //
-  //   cursor: default;
-  //   height: @control-bar-height;
-  //   min-height: @control-bar-height;
-  //   overflow: hidden;
-  //   position: relative;
-  //   width: 100%;
-  //   z-index: 2;
-  //   -webkit-user-select: none;
-  //
-  //   .terminal-frame {
-  //     @char-width: 7px;
-  //     @line-height: 15px;
-  //     @terminal-background-color: #000;
-  //     @terminal-padding-top: @control-bar-height+5px;
-  //     @terminal-padding-right: 12.5px;
-  //     @terminal-padding-bottom: 5px;
-  //     @terminal-padding-left: 12.5px;
-  //
-  //     background-color: @terminal-background-color;
-  //     height: 100%;
-  //     padding-top: @terminal-padding-top;
-  //     padding-right: @terminal-padding-right;
-  //     padding-bottom: @terminal-padding-bottom;
-  //     padding-left: @terminal-padding-left;
-  //     position: relative;
-  //
-  //     .terminal {
-  //       color: #fff;
-  //       font-family: Menlo;
-  //       height: 100%;
-  //       overflow-x: auto;
-  //       position: relative;
-  //       z-index: 1;
-  //
-  //       .cursor {
-  //         background-color: #fff;
-  //         height: @line-height;
-  //         left: 0;
-  //         position: absolute;
-  //         top: 0;
-  //         width: @char-width;
-  //       }
-  //
-  //       .line {
-  //         // font-weight: bold;
-  //         height: @line-height;
-  //         white-space: pre;
-  //
-  //         a {
-  //           &.warning-link {color: @text-color-warning;}
-  //           &.error-link {color: @text-color-error;}
-  //           // font-weight: bold;
-  //           // text-decoration: none;
-  //         }
-  //
-  //         .text-subtle,
-  //         .text-info,
-  //         .text-success,
-  //         .text-warning,
-  //         .text-error  {
-  //           font-weight: bold;
-  //         }
-  //
-  //         .icon::before {
-  //           font-size: 14px;
-  //           height: 14px;
-  //           margin: 0;
-  //           width: 14px;
-  //         }
-  //       }
-  //     }
-  //   }
-  // }

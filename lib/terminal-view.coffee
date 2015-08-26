@@ -1,4 +1,5 @@
-{View} = require('atom-space-pen-views')
+{CompositeDisposable} = require('atom')
+{$,View}              = require('atom-space-pen-views')
 
 # ------------------------------------------------------------------------------
 
@@ -13,38 +14,101 @@ class TerminalView extends View
   ## Initialization ------------------------------------------------------------
 
   initialize: (@terminal) ->
-    @terminal.onDidShow => @show()
-    @terminal.onDidHide => @hide()
-    @terminal.onDidChangeSize (rows) => @setSize(rows)
-    @terminal.onDidFocus => @focus()
-    @terminal.onDidScrollToTop => @scrollToTop()
-    @terminal.onDidScrollToBottom => @scrollToBottom()
+    @lineHeight = @terminal.getLineHeight()
+    @charWidth = @terminal.getCharWidth()
+    @cursorRowIndex = 0
+    @cursorColIndex = 0
+    @activeLineIndex = -1
 
-    @setSize(@terminal.getSize())
+    @terminalSubscrs = new CompositeDisposable
+    @terminalSubscrs.add @terminal.observeIsVisible (isVisible) =>
+      @updateOnDidChangeIsVisible(isVisible)
+    @terminalSubscrs.add @terminal.observeSize (size) =>
+      @updateOnDidChangeSize(size)
+    @terminalSubscrs.add @terminal.observeFontSize (fontSize) =>
+      @updateOnDidChangeFontSize(fontSize)
+    @terminalSubscrs.add @terminal.onDidScrollToTop =>
+      @scrollToTop()
+    @terminalSubscrs.add @terminal.onDidScrollToBottom =>
+      @scrollToBottom()
+    @terminalSubscrs.add @terminal.onDidCreateNewLine =>
+      @updateOnDidCreateNewLine()
+    @terminalSubscrs.add @terminal.onDidUpdateActiveLine (activeLine) =>
+      @updateOnDidUpdateActiveLine(activeLine)
+    @terminalSubscrs.add @terminal.onDidClear =>
+      @updateOnDidClear()
 
-    @cursor.css('height',@terminal.getLineHeight())
-    @cursor.css('width',@terminal.getCharWidth())
+  updateActiveLine: ({input,output,inputCursorPos}) ->
+    @activeLine.empty()
+    @activeLine.text(output+input)
+    @moveCursorAbsoluteInRow(output.length+inputCursorPos)
 
-    @append("njhkjhkh")
+  ## Moving the cursor -------------------------------------------------------
 
-  ## Activation and deactivation -----------------------------------------------
+  moveCursorAbsolute: (rowIndex,colIndex) ->
+    @moveCursorAbsoluteInRow(colIndex)
+    @moveCursorAbsoluteInCol(rowIndex)
 
-  setSize: (rows) ->
-    @height(rows*@terminal.getLineHeight())
+  moveCursorAbsoluteInRow: (@cursorColIndex) ->
+    left = @cursorColIndex * @charWidth
+    @cursor.css('left',left)
 
-  #   @terminal.onDidCreateNewActiveLine =>
-  #     @createNewActiveLine()
-  #
-  #   @terminal.onDidUpdateActiveLine (activeLineState) =>
-  #     @updateActiveLine(activeLineState)
-  #
-  # ## Managing
-  #
-  # @updateActiveLine: ({input,output,inputCursorPos}) ->
-  #   @activeLine.empty()
-  #   @activeLine.text(output+input)
-  #   @moveCursorAbsoluteInRow(output.length+inputCursorPos)
-  #   # @scrollToBottom()
-  #
+  moveCursorAbsoluteInCol: (@cursorRowIndex) ->
+    top = @cursorRowIndex * @lineHeight
+    @cursor.css('top',top)
+
+  moveCursorRelative: (rowOffset,colOffset) ->
+    @moveCursorRelativeInRow(colOffset)
+    @moveCursorRelativeInCol(rowOffset)
+
+  moveCursorRelativeInRow: (colOffset) ->
+    @cursorColIndex + colOffset
+    leftOffset = colOffset * @charWidth
+    @cursor.css('left',parseInt(@cursor.css('left'))+leftOffset)
+
+  moveCursorRelativeInCol: (rowOffset) ->
+    @cursorRowIndex + rowOffset
+    topOffset = rowOffset * @lineHeight
+    @cursor.css('top',parseInt(@cursor.css('top'))+topOffset)
+
+  ## Updating this view --------------------------------------------------------
+
+  updateOnDidChangeIsVisible: (@isVisible) ->
+    if @isVisible then @show() else @hide()
+
+  updateOnDidChangeSize: (@size) ->
+    @height(@size*@lineHeight)
+
+  updateOnDidChangeFontSize: (@fontSize) ->
+    @lineHeight = @terminal.getLineHeight()
+    @charWidth = @terminal.getCharWidth()
+    @css('font-size',"#{@fontSize}px")
+    @css('line-height',"#{@lineHeight}px")
+    @height(@size*@lineHeight)
+
+    # update the cursor
+    @cursor.css('height',"#{@lineHeight}px")
+    @cursor.css('width',"#{@charWidth}px")
+    @moveCursorAbsolute(@cursorRowIndex,@cursorColIndex)
+
+  updateOnDidCreateNewLine: ->
+    @activeLine = $(document.createElement('div'))
+    @activeLine.addClass('line')
+    @append(@activeLine)
+    @activeLineIndex++
+    @moveCursorAbsolute(@activeLineIndex,0)
+    @scrollToBottom()
+
+  updateOnDidUpdateActiveLine: ({input,output,inputCursorPos}) ->
+    @activeLine.empty()
+    @activeLine.text(output+input)
+    @moveCursorAbsoluteInRow(output.length+inputCursorPos)
+
+  updateOnDidClear: ->
+    @empty()
+    @append(@cursor)
+    @append(@activeLine)
+    @moveCursorRelative(-@activeLineIndex,0)
+    @activeLineIndex = 0
 
 # ------------------------------------------------------------------------------

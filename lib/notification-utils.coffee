@@ -2,11 +2,20 @@
 
 module.exports =
 
+  ## Constants -----------------------------------------------------------------
+
+  DEFAULT_SHOW_ALL_INFOS: true
+  DEFAULT_SHOW_ALL_SUCCESSES: true
+  DEFAULT_SHOW_ALL_WARNINGS: true
+  DEFAULT_SHOW_ALL_ERRORS: true
+
   # default message heads
   defaultInfoHead: 'Levels: '
   defaultSuccessHead: 'Levels: '
   defaultWarningHead: 'Levels: '
   defaultErrorHead: 'The Levels package has detected an error... :-('
+
+  ## ---------------------------------------------------------------------------
 
   addInfo: (body,{head,important}={}) ->
     head ?= @defaultInfoHead
