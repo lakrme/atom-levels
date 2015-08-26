@@ -28,6 +28,10 @@ class LanguageRegistry
 
   ## Event subscription --------------------------------------------------------
 
+  observeLanguages: (callback) ->
+    callback(language) for language in @getLanguages()
+    @onDidAddLanguage(callback)
+
   onDidAddLanguage: (callback) ->
     @emitter.on('did-add-language',callback)
 
