@@ -1,0 +1,20 @@
+{
+  "name": "Expressions",
+  "levels": [
+    {
+      "name": "Level 1 (for beginners)",
+      "description": "Enables writing simple expressions.",
+    },
+    {
+      "name": "Level 2 (for the advanced)",
+      "description": "Adds support for let expressions.",
+    }
+  ],
+  "lastActiveLevel": "Level 2 (for the advanced)",
+  "scopeName": "levels.source.expressions",
+  "levelCodeFileTypes": [
+    "exp"
+  ],
+  "objectCodeFileType": "hs",
+  "lineCommentPattern": "-- <commentText>"
+}

@@ -1,0 +1,33 @@
+{
+  "name": "Ruby",
+  "levels": [
+    {
+      "name": "Oops",
+      "grammar": "grammars/level-1.cson"
+    },
+    {
+      "name": "Level 1",
+      "description": "Description for level 2",
+      "grammar": "grammars/level-2.cson"
+    },
+    {
+      "name": "Level 2",
+      "description": "Description for level 3",
+    },
+    {
+      "name": "Level 3",
+    }
+  ],
+  "lastActiveLevel": "Level 1",
+  "defaultGrammar": "grammars/default.cson",
+  "scopeName": "levels.source.ruby",
+  "levelCodeFileTypes": [
+    "rb-levels",
+    "lrb",
+    "rbl"
+  ],
+  "objectCodeFileType": "rb",
+  "lineCommentPattern": "# <commentText>",
+  "executionMode": "interpreted",
+  "interpreterCmdPattern": "ruby <filePath>"
+}
