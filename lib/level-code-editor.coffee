@@ -1,13 +1,26 @@
-{Emitter}      = require('atom')
+{Emitter}        = require('atom')
 
-workspaceUtils = require('./workspace-utils')
+languageRegistry = require('./language-registry').getInstance()
 
-Terminal       = require('./terminal')
+workspaceUtils   = require('./workspace-utils')
+
+Terminal         = require('./terminal')
 
 # ------------------------------------------------------------------------------
 
 module.exports =
 class LevelCodeEditor
+
+  ## Deserialization -----------------------------------------------------------
+
+  atom.deserializers.add(this)
+  @version: 1
+  @deserialize: ({data},textEditor) ->
+    if (language = languageRegistry.getLanguageForName(data.languageName))?
+      level = language.getLevelForName(data.levelName)
+      terminal = atom.deserializers.deserialize(data.terminalState)
+      return new LevelCodeEditor({textEditor,language,level,terminal})
+    undefined
 
   ## Construction and destruction ----------------------------------------------
 
@@ -114,5 +127,15 @@ class LevelCodeEditor
         @textEditor.setGrammar(@level.getGrammar())
         @writeLanguageInformationFileHeaderIf('after setting the level')
         @emitter.emit('did-change-level',@level)
+
+  ## Serialization -------------------------------------------------------------
+
+  serialize: ->
+    version: @constructor.version
+    deserializer: 'LevelCodeEditor'
+    data:
+      languageName: @language.getName()
+      levelName: @level.getName()
+      terminalState: @terminal.serialize()
 
 # ------------------------------------------------------------------------------

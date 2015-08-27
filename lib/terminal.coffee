@@ -13,7 +13,8 @@ class Terminal
 
   atom.deserializers.add(this)
   @version: 1
-  @deserialize: ({data}) -> new Terminal(data)
+  @deserialize: ({data}) ->
+    new Terminal(data)
 
   ## Construction and destruction ----------------------------------------------
 
@@ -32,11 +33,13 @@ class Terminal
     @buffer = new TerminalBuffer
       prompt: 'Levels>'
       commands:
-        'topkek': (buffer) => buffer.writeLn(terminalUtils.TOPKEK)
-        'set': (buffer,args) => @setCommand(buffer,args)
-        'hide': => @hide()
-        'clear': => @clear()
-        'run': => console.log "DUMMY"
+        help: @helpCommand
+        set: @setCommand
+        unset: @unsetCommand
+        hide: @hideCommand
+        clear: @clearCommand
+        run: @runCommand
+        topkek: @topkekCommand
 
     @refCount = 0
     @executing = false
@@ -142,7 +145,9 @@ class Terminal
 
   setFontSize: (fontSize) ->
     unless fontSize is @fontSize
-      if fontSize >= 11 and fontSize <= 18
+      minFontSize = terminalUtils.MIN_FONT_SIZE
+      maxFontSize = terminalUtils.MAX_FONT_SIZE
+      if fontSize >= minFontSize and fontSize <= maxFontSize
         @fontSize = fontSize
         @emitter.emit('did-change-font-size',@fontSize)
 
@@ -195,9 +200,11 @@ class Terminal
 
   ## Terminal commands ---------------------------------------------------------
 
-  setCommand: (buffer,args) ->
+  helpCommand: =>
+
+  setCommand: (args) =>
     if not args? or args.length isnt 2
-      buffer.writeLn('set: wrong number of arguments')
+      @writeLn('set: wrong number of arguments')
     else
       propertyStr = args[0]
       valueStr = args[1]
@@ -206,13 +213,35 @@ class Terminal
           unless isNaN(value = parseInt(valueStr))
             @setSize(value)
           else
-            buffer.writeLn('set: size: invalid argument')
+            @writeLn("set: #{valueStr}: invalid argument")
         when 'fontSize'
           unless isNaN(value = parseInt(valueStr))
             @setFontSize(value)
           else
-            buffer.writeLn('set: fontSize: invalid argument')
-        else buffer.writeLn('set: unknown property')#
+            @writeLn("set: #{valueStr}: invalid argument")
+        else @writeLn("set: #{propertyStr}: unknown property")
+
+  unsetCommand: (args) =>
+    if not args? or args.length isnt 1
+      @writeLn('unset: wrong number of arguments')
+    else
+      switch (propertyStr = args[0])
+        when 'size'
+          @setSize(terminalUtils.DEFAULT_SIZE)
+        when 'fontSize'
+          @setFontSize(terminalUtils.DEFAULT_FONT_SIZE)
+        else @writeLn("unset: #{propertyStr}: unknown property")
+
+  hideCommand: =>
+    @hide()
+
+  clearCommand: =>
+    @clear()
+
+  runCommand: =>
+
+  topkekCommand: =>
+    @writeLn(terminalUtils.TOPKEK)
 
   ## Level code execution ------------------------------------------------------
 

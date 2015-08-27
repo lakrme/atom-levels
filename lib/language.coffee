@@ -45,7 +45,16 @@ class Language
     @properties.lineCommentPattern
 
   getExecutionMode: ->
-    @properties.executionMode
+    if @properties.executionMode?
+      return @properties.executionMode
+    interpreterCmdPattern = @getInterpreterCommandPattern()
+    if interpreterCmdPattern?
+      return @properties.executionMode = 'interpreted'
+    compilerCmdPattern = @getCompilerCommandPattern()
+    executionCmdPattern = @getExecutionCommandPattern()
+    if compilerCmdPattern? and executionCmdPattern?
+      return @properties.executionMode = 'compiled'
+    undefined
 
   getInterpreterCommandPattern: ->
     @properties.interpreterCmdPattern
@@ -87,8 +96,10 @@ class Language
           if (result = level.set(newLevelProperties))?
             levelChangesByLevelName ?= {}
             levelChangesByLevelName[levelName] = {}
-            levelChangesByLevelName[levelName].oldProperties = result.oldProperties
-            levelChangesByLevelName[levelName].newProperties = result.newProperties
+            levelChangesByLevelName[levelName].oldProperties = \
+              result.oldProperties
+            levelChangesByLevelName[levelName].newProperties = \
+              result.newProperties
 
     # emit event if changes were made
     if propertyChanges? or levelChangesByLevelName?

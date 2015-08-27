@@ -100,25 +100,32 @@ class WorkspaceManager
       workspace.unsetActiveLevelCodeEditor()
 
   handleDidAddTextEditor: (textEditor) ->
-    result = workspaceUtils.readLanguageInformationFromFileHeader(textEditor)
-    language = result?.language
-    level = result?.level
+    levelCodeEditorState = @state?.levelCodeEditorStatesById[textEditor.id]
+    if levelCodeEditorState?
+      levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState,\
+        textEditor)
 
-    if (data = @state?.serializedLevelCodeEditorsById[textEditor.id])?
-      languageName = data.language
-      levelName = data.level
-      unless language? and language.getName() isnt languageName
-        language ?= languageRegistry.getLanguageForName(languageName)
-        level ?= language.getLevelForName(levelName) if language?
-      terminal = new Terminal(data.serializedTerminal)
+    unless levelCodeEditor?
+      result = workspaceUtils.readLanguageInformationFromFileHeader(textEditor)
+      if (language = result?.language)?
+        level = result.level
+        levelCodeEditor = new LevelCodeEditor({textEditor,language,level})
 
-    language ?= workspaceUtils.readLanguageFromFileExtension(textEditor)
-    language ?= languageRegistry.getLanguageForGrammar(textEditor.getGrammar())
+    unless levelCodeEditor?
+      levelCodeEditorState = @state?.levelCodeEditorStatesById[textEditor.id]
+      if levelCodeEditorState?
+        levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState,\
+          textEditor)
 
-    if language?
-      params = {textEditor,language,level,terminal}
-      levelCodeEditor = new LevelCodeEditor(params)
-      workspace.addLevelCodeEditor(levelCodeEditor)
+    unless levelCodeEditor?
+      language = workspaceUtils.readLanguageFromFileExtension(textEditor)
+      levelCodeEditor = new LevelCodeEditor({textEditor,language}) if language?
+
+    unless levelCodeEditor?
+      language = languageRegistry.getLanguageForGrammar(textEditor.getGrammar())
+      levelCodeEditor = new LevelCodeEditor({textEditor,language}) if language?
+
+    workspace.addLevelCodeEditor(levelCodeEditor) if levelCodeEditor?
     @subscribeToTextEditor(textEditor)
 
   ## Text editor subscriptions -------------------------------------------------
@@ -230,7 +237,7 @@ class WorkspaceManager
 
   doStopExecution: (event) =>
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
-
+      activeLevelCodeEditor.stopExecution()
     else
       event.abortKeyBinding()
 
@@ -244,13 +251,11 @@ class WorkspaceManager
   ## Serialization -------------------------------------------------------------
 
   serializeWorkspace: ->
-    serializedLevelCodeEditorsById = {}
+    levelCodeEditorStatesById = {}
     for levelCodeEditor in workspace.getLevelCodeEditors()
-      serializedLevelCodeEditorsById[levelCodeEditor.getId()] =
-        language: levelCodeEditor.getLanguage().getName()
-        level: levelCodeEditor.getLevel().getName()
-        serializedTerminal: undefined
-    {serializedLevelCodeEditorsById}
+      levelCodeEditorStatesById[levelCodeEditor.getId()] =
+        levelCodeEditor.serialize()
+    {levelCodeEditorStatesById}
 
 # ------------------------------------------------------------------------------
 

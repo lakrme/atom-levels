@@ -130,9 +130,9 @@ class TerminalBuffer
         commandName = args.shift()
         if (command = @commands[commandName])?
           if args.length is 0
-            command(@)
+            command()
           else
-            command(@,args)
+            command(args)
         else
           @commandNotFound(commandName)
 
