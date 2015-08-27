@@ -29,6 +29,9 @@ class Language
   getName: ->
     @properties.name
 
+  getDirectoryPath: ->
+    @properties.dirPath
+
   getDefaultGrammar: ->
     @properties.defaultGrammar
 

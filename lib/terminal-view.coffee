@@ -38,11 +38,6 @@ class TerminalView extends View
     @terminalSubscrs.add @terminal.onDidClear =>
       @updateOnDidClear()
 
-  updateActiveLine: ({input,output,inputCursorPos}) ->
-    @activeLine.empty()
-    @activeLine.text(output+input)
-    @moveCursorAbsoluteInRow(output.length+inputCursorPos)
-
   ## Moving the cursor -------------------------------------------------------
 
   moveCursorAbsolute: (rowIndex,colIndex) ->
@@ -92,8 +87,7 @@ class TerminalView extends View
     @moveCursorAbsolute(@cursorRowIndex,@cursorColIndex)
 
   updateOnDidCreateNewLine: ->
-    @activeLine = $(document.createElement('div'))
-    @activeLine.addClass('line')
+    @activeLine = $('<div class="line">&nbsp;</div>')
     @append(@activeLine)
     @activeLineIndex++
     @moveCursorAbsolute(@activeLineIndex,0)
@@ -102,6 +96,7 @@ class TerminalView extends View
   updateOnDidUpdateActiveLine: ({input,output,inputCursorPos}) ->
     @activeLine.empty()
     @activeLine.text(output+input)
+    @activeLine.append('&nbsp;')
     @moveCursorAbsoluteInRow(output.length+inputCursorPos)
 
   updateOnDidClear: ->

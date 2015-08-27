@@ -38,7 +38,6 @@ class Terminal
         unset: @unsetCommand
         hide: @hideCommand
         clear: @clearCommand
-        run: @runCommand
         topkek: @topkekCommand
 
     @refCount = 0
@@ -128,9 +127,6 @@ class Terminal
 
   ## Terminal interface properties and methods ---------------------------------
 
-  getMinSize: ->
-    terminalUtils.TERMINAL_MIN_SIZE
-
   getSize: ->
     @size
 
@@ -147,7 +143,7 @@ class Terminal
     unless fontSize is @fontSize
       minFontSize = terminalUtils.MIN_FONT_SIZE
       maxFontSize = terminalUtils.MAX_FONT_SIZE
-      if fontSize >= minFontSize and fontSize <= maxFontSize
+      if minFontSize <= fontSize <= maxFontSize
         @fontSize = fontSize
         @emitter.emit('did-change-font-size',@fontSize)
 
@@ -195,10 +191,20 @@ class Terminal
   writeLn: (output) ->
     @buffer.writeLn(output)
 
+  enterScope: (params) ->
+    @buffer.enterScope(params)
+
+  exitScope: ->
+    @buffer.exitScope()
+
   clear: ->
     @buffer.clear()
 
-  ## Terminal commands ---------------------------------------------------------
+  ## Managing terminal commands ------------------------------------------------
+
+  # ...
+
+  ## Built-in terminal commands ------------------------------------------------
 
   helpCommand: =>
 
@@ -238,28 +244,27 @@ class Terminal
   clearCommand: =>
     @clear()
 
-  runCommand: =>
-
   topkekCommand: =>
     @writeLn(terminalUtils.TOPKEK)
 
-  ## Level code execution ------------------------------------------------------
+  ## Execution -----------------------------------------------------------------
 
   isExecuting: ->
     @executing
 
-  startExecution: (levelCodeEditor) ->
+  didStartExecution: ->
     unless @isExecuting()
+      # @executionData = executionData
       @executing = true
-      # TODO actually start execution
-      @emitter.emit('did-start-execution',levelCodeEditor)
+      @emitter.emit('did-start-execution')
       @emitter.emit('did-change-is-executing',@executing)
 
-  stopExecution: (levelCodeEditor) ->
+  didStopExecution: ->
     if @isExecuting()
+      # executionData = @executionData
+      # @executionData = null
       @executing = false
-      # TODO actually stop execution
-      @emitter.emit('did-stop-execution',levelCodeEditor)
+      @emitter.emit('did-stop-execution')
       @emitter.emit('did-change-is-executing',@executing)
 
   ## Showing and hiding the terminal -------------------------------------------

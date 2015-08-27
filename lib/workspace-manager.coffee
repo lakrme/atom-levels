@@ -1,6 +1,5 @@
 {CompositeDisposable} = require('atom')
 
-executionManager      = require('./execution-manager').getInstance()
 languageInstaller     = require('./language-installer').getInstance()
 languageRegistry      = require('./language-registry').getInstance()
 workspace             = require('./workspace').getInstance()
@@ -226,12 +225,12 @@ class WorkspaceManager
 
   doStartExecution: (event) =>
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
-      if activeLevelCodeEditor.getTextEditor().getPath()?
+      # TODO catch errors
+      try
         activeLevelCodeEditor.startExecution()
-      else
-        console.log atom.showSaveDialogSync()
-        # notificationUtils.addError notificationUtils.executionNotPossible,
-        #   important: true
+      catch error
+        notificationUtils.addError "Och neeee do: #{error}",
+          important: true
     else
       event.abortKeyBinding()
 

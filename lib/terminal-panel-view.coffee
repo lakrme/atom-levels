@@ -216,6 +216,7 @@ class TerminalPanelView extends View
       @separatorLeft.css('display','inline')
       @terminalControls.css('display','inline')
       # add terminal event handlers
+      @off('keydown')
       @on 'keydown', (event) =>
         terminalUtils.dispatchKeyEvent(@activeTerminal,event)
     else

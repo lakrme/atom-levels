@@ -55,9 +55,7 @@ class LanguageRegistry
 
   readLanguage: (languageDirPath) ->
     configFilePath = path.join(languageDirPath,'config.json')
-    language = @readLanguageFromConfigurationFile(configFilePath)
-    language.dirPath = languageDirPath
-    language
+    @readLanguageFromConfigurationFile(configFilePath)
 
   loadLanguage: (languageDirPath) ->
     language = @readLanguage(languageDirPath)
@@ -123,6 +121,9 @@ class LanguageRegistry
     properties.interpreterCmdPattern = config.interpreterCmdPattern
     properties.compilerCmdPattern = config.compilerCmdPattern
     properties.executionCmdPattern = config.executionCmdPattern
+
+    # set the language directory path
+    properties.dirPath = path.dirname(configFilePath)
 
     # set the default grammar
     if (defaultGrammarPath = config.defaultGrammar)?
@@ -194,9 +195,8 @@ class LanguageRegistry
   ## Handling language changes -------------------------------------------------
 
   applyLanguageChanges: (language,changes) ->
-    console.log changes
-    # TODO do something with the changes (topkek)
-    configFilePath = path.join(language.dirPath,'config.json')
+    # TODO do something with the changes
+    configFilePath = path.join(language.getDirectoryPath(),'config.json')
     @writeLanguageToConfigurationFile(language,configFilePath)
     undefined
 

@@ -1,10 +1,12 @@
-{Emitter}        = require('atom')
+{Emitter}         = require('atom')
 
-languageRegistry = require('./language-registry').getInstance()
+languageRegistry  = require('./language-registry').getInstance()
 
-workspaceUtils   = require('./workspace-utils')
+workspaceUtils    = require('./workspace-utils')
 
-Terminal         = require('./terminal')
+AnnotationManager = require('./annotation-manager')
+ExecutionManager  = require('./execution-manager')
+Terminal          = require('./terminal')
 
 # ------------------------------------------------------------------------------
 
@@ -30,12 +32,16 @@ class LevelCodeEditor
     @terminal ?= new Terminal
     @terminal.acquire()
 
-    # subscribe to text buffer
-    @willSaveSubscr = @textEditor.getBuffer().onWillSave =>
+    # create annotation and execution manager instances
+    @annotationManager = new AnnotationManager(@)
+    @executionManager = new ExecutionManager(@)
+
+    # subscribe to the text buffer
+    @bufferSubscr = @textEditor.getBuffer().onWillSave =>
       @writeLanguageInformationFileHeaderIf('before saving the buffer')
 
   destroy: ->
-    @willSaveSubscr.dispose()
+    @bufferSubscr.dispose()
     @terminal.release()
     @emitter.emit('did-destroy')
 
@@ -58,13 +64,18 @@ class LevelCodeEditor
   onDidDestroy: (callback) ->
     @emitter.on('did-destroy',callback)
 
+  observeIsExecuting: (callback) ->
+    callback(@isExecuting())
+    @onDidChangeIsExecuting(callback)
+
+  onDidChangeIsExecuting: (callback) ->
+    @emitter.on('did-change-is-executing',callback)
+
   onDidStartExecution: (callback) ->
-    @terminal.onDidStartExecution (levelCodeEditor) =>
-      callback() if levelCodeEditor.getId() is @getId()
+    @emitter.on('did-start-execution',callback)
 
   onDidStopExecution: (callback) ->
-    @terminal.onDidStopExecution (levelCodeEditor) =>
-      callback() if levelCodeEditor.getId() is @getId()
+    @emitter.on('did-stop-execution',callback)
 
   ## Associated entities and derived properties and methods --------------------
 
@@ -73,9 +84,6 @@ class LevelCodeEditor
 
   getId: ->
     @textEditor.id
-
-  getPath: ->
-    @textEditor.getPath()
 
   getLanguage: ->
     @language
@@ -88,25 +96,6 @@ class LevelCodeEditor
 
   getTerminal: ->
     @terminal
-
-  isExecuting: ->
-    @terminal.isExecuting()
-
-  startExecution: ->
-    @terminal.startExecution(@)
-
-  stopExecution: ->
-    @terminal.stopExecution(@)
-
-  ## Writing language information to the file header ---------------------------
-
-  writeLanguageInformationFileHeaderIf: (condition) ->
-    configKey = 'levels.whenToWriteFileHeader'
-    whenToWriteFileHeader = atom.config.get(configKey)
-    if whenToWriteFileHeader is condition
-      workspaceUtils.deleteLanguageInformationFileHeader(@textEditor)
-      workspaceUtils.writeLanguageInformationFileHeader(@textEditor,\
-        @language,@level)
 
   ## Setting the language and the level ----------------------------------------
 
@@ -127,6 +116,35 @@ class LevelCodeEditor
         @textEditor.setGrammar(@level.getGrammar())
         @writeLanguageInformationFileHeaderIf('after setting the level')
         @emitter.emit('did-change-level',@level)
+
+  ## Writing language information to the file header ---------------------------
+
+  writeLanguageInformationFileHeaderIf: (condition) ->
+    configKey = 'levels.whenToWriteFileHeader'
+    whenToWriteFileHeader = atom.config.get(configKey)
+    if whenToWriteFileHeader is condition
+      workspaceUtils.deleteLanguageInformationFileHeader(@textEditor)
+      workspaceUtils.writeLanguageInformationFileHeader(@textEditor,\
+        @language,@level)
+
+  ## Level code execution ------------------------------------------------------
+
+  isExecuting: ->
+    @executionManager.isExecuting()
+
+  startExecution: ->
+    @executionManager.startExecution()
+
+  didStartExecution: ->
+    @emitter.emit('did-start-execution')
+    @emitter.emit('did-change-is-executing',true)
+
+  stopExecution: ->
+    @executionManager.stopExecution()
+
+  didStopExecution: ->
+    @emitter.emit('did-stop-execution')
+    @emitter.emit('did-change-is-executing',false)
 
   ## Serialization -------------------------------------------------------------
 
