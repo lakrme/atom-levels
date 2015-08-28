@@ -167,7 +167,7 @@ class LanguageRegistry
       if level.getName() is config.lastActiveLevel
         properties.lastActiveLevel = level
       else
-        properties.lastActiveLevel = undefined
+        properties.lastActiveLevel ?= undefined
 
     new Language(properties,levels)
 
