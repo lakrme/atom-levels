@@ -1,12 +1,13 @@
-{Emitter}         = require('atom')
+{CompositeDisposable,Emitter} = require('atom')
 
-languageRegistry  = require('./language-registry').getInstance()
+languageRegistry              = require('./language-registry').getInstance()
 
-workspaceUtils    = require('./workspace-utils')
+workspaceUtils                = require('./workspace-utils')
 
-AnnotationManager = require('./annotation-manager')
-ExecutionManager  = require('./execution-manager')
-Terminal          = require('./terminal')
+AnnotationManager             = require('./annotation-manager')
+ExecutionIssue                = require('./execution-issue')
+ExecutionManager              = require('./execution-manager')
+Terminal                      = require('./terminal')
 
 # ------------------------------------------------------------------------------
 
@@ -36,11 +37,19 @@ class LevelCodeEditor
     @annotationManager = new AnnotationManager(@)
     @executionManager = new ExecutionManager(@)
 
-    # subscribe to the text buffer
+    # text buffer subscriptions
     @bufferSubscr = @textEditor.getBuffer().onWillSave =>
       @writeLanguageInformationFileHeaderIf('before saving the buffer')
 
+    # terminal subscriptions
+    @executionIssuesById = {}
+    @terminalSubscrs = new CompositeDisposable
+    @terminalSubscrs = @terminal.onDidReadTypedMessage (typedMessage) =>
+      console.log typedMessage
+      @readExecutionIssueFromTypedMessage(typedMessage)
+
   destroy: ->
+    @terminalSubscrs.dispose()
     @bufferSubscr.dispose()
     @terminal.release()
     @emitter.emit('did-destroy')
@@ -100,6 +109,14 @@ class LevelCodeEditor
   ## Setting the language and the level ----------------------------------------
 
   setLanguage: (language,level) ->
+    # if @isExecuting()
+    #   @restore()
+    #   throw new Error
+    #     name: 'LanguageInformationError'
+    #     message: """
+    #       asjhdakjshdasjdahsm
+    #     """
+
     if language.getName() is @language?.getName()
       @setLevel(level) if level?
     else
@@ -110,12 +127,18 @@ class LevelCodeEditor
         level: @level
 
   setLevel: (level) ->
+    # if @isExecuting()
+    #   throw new Error({name: 'LanguageInformationError'})
+
     if @language.hasLevel(level)
       unless level.getName() is @level?.getName()
         @level = level
         @textEditor.setGrammar(@level.getGrammar())
         @writeLanguageInformationFileHeaderIf('after setting the level')
         @emitter.emit('did-change-level',@level)
+
+  restore: ->
+    @textEditor.setGrammar(@level.getGrammar())
 
   ## Writing language information to the file header ---------------------------
 
@@ -145,6 +168,37 @@ class LevelCodeEditor
   didStopExecution: ->
     @emitter.emit('did-stop-execution')
     @emitter.emit('did-change-is-executing',false)
+
+  ## Managing execution issues -------------------------------------------------
+
+  readExecutionIssueFromTypedMessage: (typedMessage) ->
+    if @isExecuting()
+      type = typedMessage.type
+      source = typedMessage.data?.source
+      if source? and (type is 'warning' or type is 'error')
+        executionIssue = new ExecutionIssue @,
+          id: typedMessage.id
+          type: type
+          source: source
+          row: typedMessage.data.row
+          column: typedMessage.data.col
+          message: typedMessage.body
+        @addExecutionIssue(executionIssue)
+
+  addExecutionIssue: (executionIssue) ->
+    console.log executionIssue
+    @executionIssuesById[executionIssue.getId()] = executionIssue
+    @annotationManager.addAnnotationForExecutionIssue(executionIssue)
+
+  removeAllExecutionIssues: ->
+    @activeIssuesById = {}
+
+  getExecutionIssueById: (executionIssueId) ->
+    @executionIssuesById[executionIssueId]
+
+  # getExecutionIssues: ->
+  #   for _,executionIssue of @executionIssues
+  #   executionIssue for id,language of @languagesByName
 
   ## Serialization -------------------------------------------------------------
 

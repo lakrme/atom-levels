@@ -19,6 +19,7 @@ class TerminalView extends View
     @cursorRowIndex = 0
     @cursorColIndex = 0
     @activeLineIndex = -1
+    @waitingForTypedMessage = false
 
     @terminalSubscrs = new CompositeDisposable
     @terminalSubscrs.add @terminal.observeIsVisible (isVisible) =>
@@ -27,6 +28,8 @@ class TerminalView extends View
       @updateOnDidChangeSize(size)
     @terminalSubscrs.add @terminal.observeFontSize (fontSize) =>
       @updateOnDidChangeFontSize(fontSize)
+    @terminalSubscrs.add @terminal.onDidFocus =>
+      @activeLine.focus()
     @terminalSubscrs.add @terminal.onDidScrollToTop =>
       @scrollToTop()
     @terminalSubscrs.add @terminal.onDidScrollToBottom =>
@@ -37,6 +40,10 @@ class TerminalView extends View
       @updateOnDidUpdateActiveLine(activeLine)
     @terminalSubscrs.add @terminal.onDidClear =>
       @updateOnDidClear()
+    @terminalSubscrs.add @terminal.onDidStartReadingTypedMessage =>
+      @didStartReadingTypedMessage()
+    @terminalSubscrs.add @terminal.onDidReadTypedMessage (typedMessage) =>
+      @didReadTypedMessage(typedMessage)
 
   ## Moving the cursor -------------------------------------------------------
 
@@ -69,7 +76,15 @@ class TerminalView extends View
   ## Updating this view --------------------------------------------------------
 
   updateOnDidChangeIsVisible: (@isVisible) ->
-    if @isVisible then @show() else @hide()
+    if @isVisible
+      @show()
+      @on 'click', '.warning-link', (event) =>
+        @didClickIssueLink(event.target)
+      @on 'click', '.error-link', (event) =>
+        @didClickIssueLink(event.target)
+    else
+      @hide()
+      @off('click')
 
   updateOnDidChangeSize: (@size) ->
     @height(@size*@lineHeight)
@@ -81,23 +96,31 @@ class TerminalView extends View
     @css('line-height',"#{@lineHeight}px")
     @height(@size*@lineHeight)
 
+    # update the icon size
+    icons = $('.icon:before')
+    icons.css('font-size',"#{@fontSize}px")
+    icons.css('height',"#{@fontSize}px")
+    icons.css('width',"#{@fontSize}px")
+
     # update the cursor
     @cursor.css('height',"#{@lineHeight}px")
     @cursor.css('width',"#{@charWidth}px")
     @moveCursorAbsolute(@cursorRowIndex,@cursorColIndex)
 
   updateOnDidCreateNewLine: ->
-    @activeLine = $('<div class="line">&nbsp;</div>')
-    @append(@activeLine)
-    @activeLineIndex++
-    @moveCursorAbsolute(@activeLineIndex,0)
-    @scrollToBottom()
+    unless @waitingForTypedMessage
+      @activeLine = $('<div class="line" tabindex="0">&nbsp;</div>')
+      @append(@activeLine)
+      @activeLineIndex++
+      @moveCursorAbsolute(@activeLineIndex,0)
+      @scrollToBottom()
 
   updateOnDidUpdateActiveLine: ({input,output,inputCursorPos}) ->
-    @activeLine.empty()
-    @activeLine.text(output+input)
-    @activeLine.append('&nbsp;')
-    @moveCursorAbsoluteInRow(output.length+inputCursorPos)
+    unless @waitingForTypedMessage
+      @activeLine.empty()
+      @activeLine.text(output+input)
+      @activeLine.append('&nbsp;')
+      @moveCursorAbsoluteInRow(output.length+inputCursorPos)
 
   updateOnDidClear: ->
     @empty()
@@ -105,5 +128,61 @@ class TerminalView extends View
     @append(@activeLine)
     @moveCursorRelative(-@activeLineIndex,0)
     @activeLineIndex = 0
+
+  ## Processing typed messages -------------------------------------------------
+
+  didStartReadingTypedMessage: ->
+    @waitingForTypedMessage = true
+
+  didReadTypedMessage: (typedMessage) ->
+    @waitingForTypedMessage = false
+    @putTypedMessage(typedMessage)
+
+  putTypedMessage: (typedMessage) ->
+    headLines = typedMessage.head.split('\n').splice(1).slice(0,-1)
+    bodyLines = typedMessage.body.split('\n').splice(1).slice(0,-1)
+
+    # process execution warnings and errors
+    type = typedMessage.type
+    if (type is 'warning' or type is 'error') and typedMessage.data.source?
+      # create issue link element
+      startTag = ''
+      endTag = ''
+      if (row = typedMessage.data.row)?
+        col = typedMessage['data-col']
+        startTag  = "<a class=\"#{type}-link\" href=\"#\" data-row=\"#{row}\""
+        startTag += " data-col=\"#{col}\"" if col?
+        startTag += ">"
+        endTag    = "</a>"
+      headLines[i] = "#{startTag}"+line+endTag for line,i in headLines
+      bodyLines[i] =               line        for line,i in bodyLines
+
+    # default typed message processing
+    headHtmlLines = []
+    for line in headLines
+      htmlLine = "<span class=\"text-#{type}\">#{line}</span>"
+      headHtmlLines.push(htmlLine)
+    bodyHtmlLines = []
+    for line in bodyLines
+      htmlLine = "<span class=\"text-#{typedMessage.type}\">#{line}</span>"
+      bodyHtmlLines.push(htmlLine)
+
+    # put typed message
+    htmlLines = headHtmlLines.concat(bodyHtmlLines)
+    for line,i in htmlLines
+      @activeLine.empty()
+      @activeLine.append(line)
+      if i isnt htmlLines.length - 1
+        @updateOnDidCreateNewLine()
+
+  ## Warning and error links ---------------------------------------------------
+
+  didClickIssueLink: (element) ->
+    row = parseInt(element.getAttribute('data-row')) - 1
+    col = parseInt(element.getAttribute('data-col') ? 0) - 1
+    textEditor = atom.workspace.getActiveTextEditor()
+    pos = textEditor.clipBufferPosition([row,col])
+    atom.views.getView(textEditor).focus()
+    textEditor.setCursorBufferPosition(pos)
 
 # ------------------------------------------------------------------------------

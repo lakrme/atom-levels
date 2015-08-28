@@ -11,9 +11,9 @@ module.exports =
 class TerminalPanelView extends View
 
   @content: ->
-    @div class: 'levels-view terminal-panel', =>
+    @div class: 'levels-view terminal-panel', tabindex: 0, =>
       @div class: 'resize-handle', outlet: 'resizeHandle'
-      @div class: 'control-bar', tabindex: 0, outlet: 'controlBar', =>
+      @div class: 'control-bar', outlet: 'controlBar', =>
 
         @div class: 'control-bar-left', =>
 
@@ -34,10 +34,10 @@ class TerminalPanelView extends View
             @a href: '#', click: 'doClearTerminal', =>
               @span class: 'icon icon-x', =>
                 @text 'Clear'
-            @a href: '#', click: 'doScrollToTopOfTerminal', =>
+            @a href: '#', click: 'doScrollTerminalToTop', =>
               @span class: 'icon icon-move-up', =>
                 @text 'To Top'
-            @a href: '#', click: 'doScrollToBottomOfTerminal', =>
+            @a href: '#', click: 'doScrollTerminalToBottom', =>
               @span class: 'icon icon-move-down', =>
                 @text 'To Bottom'
             # @a href: '#', click: 'doIncreaseTerminalFontSize', =>
@@ -64,7 +64,7 @@ class TerminalPanelView extends View
           @div class: 'control-bar-separator', outlet: 'separatorRight'
 
           @div class: 'control-group', =>
-            @a href: '#', =>
+            @a href: '#', click: 'test', =>
               @span class: 'icon icon-gear', =>
                 @text 'Language Configuration'
 
@@ -112,8 +112,7 @@ class TerminalPanelView extends View
       @activeTerminal.setSize(size+sizeDiff)
 
   resizeToMinSize: =>
-    minSize = @activeTerminal.getMinSize()
-    @activeTerminal.setSize(minSize)
+    @activeTerminal.setSize(terminalUtils.MIN_SIZE)
 
   ## Handling view events ------------------------------------------------------
 
@@ -126,10 +125,10 @@ class TerminalPanelView extends View
   doClearTerminal: ->
     @activeTerminal.clear()
 
-  doScrollToTopOfTerminal: ->
+  doScrollTerminalToTop: ->
     @activeTerminal.scrollToTop()
 
-  doScrollToBottomOfTerminal: ->
+  doScrollTerminalToBottom: ->
     @activeTerminal.scrollToBottom()
 
   doIncreaseTerminalFontSize: ->
@@ -146,14 +145,19 @@ class TerminalPanelView extends View
     workspaceView = atom.views.getView(atom.workspace)
     atom.commands.dispatch(workspaceView,'levels:stop-execution')
 
+  test: ->
+    @activeTerminal.writeSuccess
+      head: "hallo"
+      body: "tschüß"
+
   ## Updating the terminal panel's state ---------------------------------------
 
   updateOnDidEnterWorkspace: (activeLevelCodeEditor) ->
     @activeLanguage = activeLevelCodeEditor.getLanguage()
     @activeTerminal = activeLevelCodeEditor.getTerminal()
+    @show()
     @updateOnDidChangeActiveLanguageOfWorkspace(@activeLanguage)
     @updateOnDidChangeActiveTerminalOfWorkspace(@activeTerminal)
-    @show()
 
     # set up window event handlers
     @on 'mousedown', '.resize-handle', => @resizeStarted()
@@ -210,6 +214,7 @@ class TerminalPanelView extends View
 
   updateOnDidChangeIsVisibleOfActiveTerminal: (isVisible) ->
     if isVisible
+      # update control bar element
       @resizeHandle.show()
       @showTerminalLink.hide()
       @hideTerminalLink.show()
@@ -220,6 +225,7 @@ class TerminalPanelView extends View
       @on 'keydown', (event) =>
         terminalUtils.dispatchKeyEvent(@activeTerminal,event)
     else
+      # update control bar elements
       @resizeHandle.hide()
       @showTerminalLink.show()
       @hideTerminalLink.hide()

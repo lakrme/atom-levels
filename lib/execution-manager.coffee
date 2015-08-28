@@ -32,11 +32,13 @@ class ExecutionManager
 
     dirPath = @language.getDirectoryPath()
 
+    executionMsg = "Running #{@language.getName()} (#{@level.getName()}) program..."
+    @terminal.writeLn(executionMsg)
+
     # build command
     cmd = [
       "#{path.join(dirPath,'run')}"
-      '-v','-r','-m'
-      "#{executionMode}"
+      '-m',"#{executionMode}"
       "#{@level.getNumber()}"
       "#{filePath}"
       '2>&1'

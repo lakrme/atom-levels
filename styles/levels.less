@@ -81,7 +81,7 @@
 
       .terminal {
         color: #fff;
-        font-family: Menlo;
+        font-family: Courier;
         overflow: scroll;
         position: relative;
 
@@ -92,6 +92,16 @@
 
         .line {
           white-space: pre;
+
+          a {
+            &.warning-link {color: @text-color-warning;}
+            &.error-link {color: @text-color-error;}
+          }
+
+          .text-subtle,
+          .text-error  {
+            font-weight: bold;
+          }
         }
       }
     }

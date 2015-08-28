@@ -58,8 +58,8 @@ class TerminalBuffer
 
     if prompt
       @activeLineOutput = "#{prompt} "
-      @promptIsActive = true
       @didUpdateActiveLine()
+    @promptIsActive = true
 
   addStringToOutput: (string) ->
     if @promptIsActive
@@ -159,9 +159,8 @@ class TerminalBuffer
 
   ## Entering and exiting scopes -----------------------------------------------
 
-  # TODO overwrite old prompt (see exitScope)
   enterScope: ({prompt,commands,commandNotFound}={}) ->
-    prompt ?= prompt
+    prompt ?= 'none'
     commands ?= 'none'
     commandNotFound ?= @commandNotFound
 
@@ -174,6 +173,7 @@ class TerminalBuffer
       when 'inherit' then commands = @commands
 
     @prompt = prompt
+    console.log @prompt
     @commands = commands
     @commandNotFound = commandNotFound
     @inputHistory = []
@@ -182,6 +182,14 @@ class TerminalBuffer
       commands: @commands
       commandNotFound: @commandNotFound
       inputHistory: @inputHistory
+
+    # update active line
+    if @promptIsActive
+      if @prompt
+        @addStringToOutput("#{@prompt} ")
+      else
+        @addStringToOutput('')
+      @promptIsActive = true
 
   exitScope: ->
     # the root scope can not be exited
@@ -194,7 +202,7 @@ class TerminalBuffer
       @inputHistory = currentScope.inputHistory
 
       # update prompt
-      if @prompt
+      if @promptIsActive
         @addStringToOutput("#{@prompt} ")
         @promptIsActive = true
 

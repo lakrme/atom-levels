@@ -1,8 +1,9 @@
-{Emitter}      = require('atom')
+{CompositeDisposable,Emitter} = require('atom')
+{$}                           = require('atom-space-pen-views')
 
-terminalUtils  = require('./terminal-utils')
+terminalUtils                 = require('./terminal-utils')
 
-TerminalBuffer = require('./terminal-buffer')
+TerminalBuffer                = require('./terminal-buffer')
 
 # ------------------------------------------------------------------------------
 
@@ -42,8 +43,17 @@ class Terminal
 
     @refCount = 0
     @executing = false
+    @typedMessageBuffer = null
+    @typedMessageCurrentLineBuffer = null
+
+    @bufferSubscrs = new CompositeDisposable
+    @bufferSubscrs.add @buffer.onDidCreateNewLine =>
+      @updateTypedMessageBufferOnDidCreateNewLine()
+    @bufferSubscrs.add @buffer.onDidUpdateActiveLine ({output}) =>
+      @updateTypedMessageBufferOnDidUpdateActiveLine(output)
 
   destroy: ->
+    @bufferSubscrs.dispose()
     @emitter.emit('did-destroy')
 
   ## Event subscription --------------------------------------------------------
@@ -87,6 +97,13 @@ class Terminal
   onDidScrollToBottom: (callback) ->
     @emitter.on('did-scroll-to-bottom',callback)
 
+  # observeIsBusy: (callback) ->
+  #   callback(@isBusy())
+  #   @onDidChangeIsBusy(callback)
+  #
+  # onDidChangeIsBusy: (callback) ->
+  #   @emitter.on('did-change-is-busy',callback)
+
   observeIsExecuting: (callback) ->
     callback(@isExecuting())
     @onDidChangeIsExecuting(callback)
@@ -111,6 +128,12 @@ class Terminal
 
   onDidClear: (callback) ->
     @buffer.onDidClear(callback)
+
+  onDidStartReadingTypedMessage: (callback) ->
+     @emitter.on('did-start-reading-typed-message',callback)
+
+  onDidReadTypedMessage: (callback) ->
+    @emitter.on('did-read-typed-message',callback)
 
   ## Acquiring and releasing the terminal --------------------------------------
 
@@ -158,7 +181,7 @@ class Terminal
 
   getCharWidth: ->
     dummyElement = document.createElement('span')
-    dummyElement.style.fontFamily = 'Menlo'
+    dummyElement.style.fontFamily = 'Courier'
     dummyElement.style.fontSize = "#{@fontSize}px"
     dummyElement.style.visibility = 'hidden'
     dummyElement.textContent = '_'
@@ -199,6 +222,86 @@ class Terminal
 
   clear: ->
     @buffer.clear()
+
+  ## Writing typed messages to the terminal ------------------------------------
+
+  writeTypedMessage: ({head,body,type,icon,data}={}) ->
+    if head or body
+      startTag = ''
+      endTag = ''
+      if type isnt 'normal' or icon or data?
+        startTag  = "<message type=\"#{type}\""
+        startTag += " icon=\"#{icon}\""          if icon
+        startTag += " data-#{key}=\"#{value}\""  for key,value of data
+        startTag += '>\n'
+        headElem  = "<head>\n#{head}\n</head>\n" if head
+        bodyElem  = "<body>\n#{body}\n</body>\n" if body
+        endTag    = "</message>\n"
+      else
+        headElem = "#{head}\n" if head
+        bodyElem = "#{body}\n"
+      typedMessage = startTag + headElem + bodyElem + endTag
+      @write(typedMessage)
+
+  writeSubtle: ({head,body,icon}={}) ->
+    @writeTypedMessage({head,body,type: 'subtle',icon})
+
+  writeInfo: ({head,body,icon}={}) ->
+    @writeTypedMessage({head,body,type: 'info',icon})
+
+  writeSuccess: ({head,body,icon}={}) ->
+    @writeTypedMessage({head,body,type: 'success',icon})
+
+  writeWarning: ({head,body,icon,row,col}={}) ->
+    data = {}
+    data.row = row if row
+    data.col = col if row and col
+    @writeTypedMessage({head,body,type: 'warning',icon,data})
+
+  writeError: ({head,body,icon,row,col}={}) ->
+    data = {}
+    data.row = row if row
+    data.col = col if row and col
+    @writeTypedMessage({head,body,type: 'error',icon,data})
+
+  ## Reading typed message from the output -------------------------------------
+
+  updateTypedMessageBufferOnDidCreateNewLine: ->
+    if @typedMessageBuffer?
+      @typedMessageBuffer += "#{@typedMessageCurrentLineBuffer}\n"
+      if @typedMessageCurrentLineBuffer.match(/^<\/message>$/)?
+        typedMessage = @readTypedMessage(@typedMessageBuffer)
+        @typedMessageBuffer = null
+        @typedMessageCurrentLineBuffer = null
+        @emitter.emit('did-read-typed-message',typedMessage)
+
+  updateTypedMessageBufferOnDidUpdateActiveLine: (output) ->
+    if @typedMessageBuffer?
+      @typedMessageCurrentLineBuffer = output
+    else
+      if output.match(/^<message\s+.*type=.*>$/)?
+        @typedMessageBuffer = ''
+        @typedMessageCurrentLineBuffer = output
+        @emitter.emit('did-start-reading-typed-message')
+
+  readTypedMessage: (buffer) ->
+    typedMessageXml = $($.parseXML(buffer)).find('message')
+    typedMessage = {}
+
+    # read attributes
+    typedMessageXml.each ->
+      $.each this.attributes, (i,attr) ->
+        if attr.name.startsWith('data-')
+          dataKey = attr.name.substr(5)
+          typedMessage.data ?= {}
+          typedMessage.data[dataKey] = attr.value
+        else
+          typedMessage[attr.name] = attr.value
+
+    # read head and body content
+    typedMessage.head = typedMessageXml.children('head').text()
+    typedMessage.body = typedMessageXml.children('body').text()
+    typedMessage
 
   ## Managing terminal commands ------------------------------------------------
 
@@ -246,6 +349,21 @@ class Terminal
 
   topkekCommand: =>
     @writeLn(terminalUtils.TOPKEK)
+
+  # ## Locking and unlocking the terminal ----------------------------------------
+  #
+  # isBusy: ->
+  #   @busy
+  #
+  # hire: ->
+  #   unless @isBusy()
+  #     @busy = true
+  #     @emitter.emit('did-change-is-busy',@busy)
+  #
+  # fire: ->
+  #   if @isBusy()
+  #     @busy = false
+  #     @emitter.emit('did-change-is-busy'@busy)
 
   ## Execution -----------------------------------------------------------------
 
@@ -298,56 +416,3 @@ class Terminal
       fontSize: @fontSize
 
 # ------------------------------------------------------------------------------
-
-  # onWillReadTypedMessage: (callback) ->
-  #    @emitter.on('will-read-typed-message',callback)
-  #
-  # onDidReadTypedMessage: (callback) ->
-  #   @emitter.on('did-read-typed-message',callback)
-
-  ## Writing to the terminal ---------------------------------------------------
-
-  # write: (output) ->
-  #   @buffer.write(output)
-  #
-  # writeLn: (output) ->
-  #   @buffer.writeLn(output)
-
-  # writeTypedMessage = (head,body,{type,icon,data}={}) ->
-  #       if head or body
-  #         type ?= "normal"
-  #         startTag = ''
-  #         endTag = ''
-  #         headElem = ''
-  #         bodyElem = ''
-  #         if type isnt 'normal' or icon or data?
-  #           startTag  = "<message type=\"#{type}\""
-  #           startTag += " icon=\"#{icon}\""          if icon
-  #           startTag += " data-#{key}=\"#{value}\""  for key,value of data
-  #           startTag += '>\n'
-  #           headElem  = "<head>\n#{head}\n</head>\n" if head
-  #           bodyElem  = "<body>\n#{body}\n</body>\n" if body
-  #           endTag    = "</message>\n"
-  #         typedMessage = startTag + headElem + bodyElem + endTag
-  #         @write(typedMessage)
-  #
-  # writeSubtleMessage = (head,body) ->
-  #   @writeTypedMessage(head,body,{type: 'subtle'})
-  #
-  # writeInfoMessage = (head,body,{icon}={}) ->
-  #   @writeTypedMessage(head,body,{type: 'info',icon})
-  #
-  # writeSuccessMessage = (head,body,{icon}={}) ->
-  #   @writeTypedMessage(head,body,{type: 'success',icon})
-  #
-  # writeWarningMessage = (head,body,{icon,row,col}={}) ->
-  #   data = {}
-  #   data.row = row if row
-  #   data.col = col if row and col
-  #   @writeTypedMessage(head,body,{type: 'warning',icon,data})
-  #
-  # writeErrorMessage = (head,body,{icon,row,col}={}) ->
-  #   data = {}
-  #   data.row = row if row
-  #   data.col = col if row and col
-  #   @writeTypedMessage(head,body,{type: 'error',icon,data})

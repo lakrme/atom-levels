@@ -1,21 +1,18 @@
 @import "ui-variables";
 
 atom-text-editor::shadow {
-  //
-  // .line-number {
-  //   &.levels\:annotation {
-  //     background-color: fade(@text-color-warning,25%);
-  //   }
-  //   &.levels\:annotation:hover {
-  //     opacity: 1;
-  //   }
-  //   &.levels\:annotation-warning {
-  //     color: @text-color-warning;
-  //     background-color: fade(@text-color-warning,25%);
-  //   }
-  //   &.levels\:annotation-error {
-  //     color: @text-color-error;
-  //     background-color: fade(@text-color-error,25%);
-  //   }
-  // }
+
+  .line-number {
+    &.annotation:hover {
+      opacity: 1;
+    }
+    &.annotation-warning {
+      color: @text-color-warning;
+      background-color: fade(@text-color-warning,25%);
+    }
+    &.annotation-error {
+      color: @text-color-error;
+      background-color: fade(@text-color-error,25%);
+    }
+  }
 }
