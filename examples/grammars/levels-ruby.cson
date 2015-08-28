@@ -1,2 +1,6 @@
 'name': 'Ruby (Levels)'
 'scopeName': 'levels.source.ruby'
+'fileTypes': [
+  'lrb'
+  'rbl'
+]

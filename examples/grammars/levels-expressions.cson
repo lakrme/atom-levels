@@ -1,2 +1,7 @@
 'name': 'Expressions (Levels)'
 'scopeName': 'levels.source.expressions'
+'fileTypes': [
+  'exp'
+  'expl'
+  'lexp'
+]

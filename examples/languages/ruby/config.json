@@ -12,10 +12,10 @@
     },
     {
       "name": "Level 2",
-      "description": "Description for level 3",
+      "description": "Description for level 3"
     },
     {
-      "name": "Level 3",
+      "name": "Level 3"
     }
   ],
   "lastActiveLevel": "Level 1",
