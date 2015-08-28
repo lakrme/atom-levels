@@ -1,4 +1,5 @@
 {CompositeDisposable} = require('atom')
+path                  = require('path')
 
 languageInstaller     = require('./language-installer').getInstance()
 languageRegistry      = require('./language-registry').getInstance()
@@ -28,7 +29,7 @@ class WorkspaceManager
       terminalView = new TerminalView(terminal)
       # initialize the terminal
       terminal.newLine()
-      terminal.writeLn('Welcome to the Levels terminal!')
+      terminal.writeInfo({body: 'Welcome to the Levels terminal!'})
       terminalView
 
     # create workspace view components
@@ -66,6 +67,8 @@ class WorkspaceManager
       'levels:toggle-terminal': @doToggleTerminal
       'levels:increase-terminal-font-size': @doIncreaseTerminalFontSize
       'levels:decrease-terminal-font-size': @doDecreaseTerminalFontSize
+      'levels:scroll-terminal-to-top': @doScrollTerminalToTop
+      'levels:scroll-terminal-to-bottom': @doScrollTerminalToBottom
       'levels:start-execution': @doStartExecution
       'levels:stop-execution': @doStopExecution
 
@@ -99,7 +102,7 @@ class WorkspaceManager
       workspace.unsetActiveLevelCodeEditor()
 
   handleDidAddTextEditor: (textEditor) ->
-    levelCodeEditorState = @state?.levelCodeEditorStatesById[textEditor.id]
+    levelCodeEditorState = @state?.levelCodeEditorStatesById?[textEditor.id]
     if levelCodeEditorState?
       levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState,\
         textEditor)
@@ -109,12 +112,6 @@ class WorkspaceManager
       if (language = result?.language)?
         level = result.level
         levelCodeEditor = new LevelCodeEditor({textEditor,language,level})
-
-    unless levelCodeEditor?
-      levelCodeEditorState = @state?.levelCodeEditorStatesById[textEditor.id]
-      if levelCodeEditorState?
-        levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState,\
-          textEditor)
 
     unless levelCodeEditor?
       language = workspaceUtils.readLanguageFromFileExtension(textEditor)
@@ -150,8 +147,9 @@ class WorkspaceManager
     @unsubscribeFromTextEditor(textEditor)
 
   handleDidChangeGrammar: (textEditor,oldGrammarName,newGrammar) ->
+    # this condition prevents the handler from being executed for grammar
+    # changes caused by level code editor initalizations or level changes
     unless newGrammar.name is oldGrammarName
-
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
         textEditor.onDidChangeGrammar (grammar) =>
@@ -160,9 +158,6 @@ class WorkspaceManager
       language = languageRegistry.getLanguageForGrammar(newGrammar)
       if workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
-        # TODO prevent grammar change when level code editor is executing
-        # if levelCodeEditor.isExecuting()
-        #   ...
         if language?
           levelCodeEditor.setLanguage(language)
         else
@@ -177,6 +172,9 @@ class WorkspaceManager
           workspace.addLevelCodeEditor(levelCodeEditor)
           if textEditor is atom.workspace.getActiveTextEditor()
             workspace.setActiveLevelCodeEditor(levelCodeEditor)
+    else
+      if path.dirname(newGrammar.path).endsWith('levels/grammars')
+        workspace.getLevelCodeEditorForId(textEditor.id).restore()
 
   ## Language registry subscriptions -------------------------------------------
 
@@ -207,7 +205,12 @@ class WorkspaceManager
 
   doToggleTerminal: (event) =>
     if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
-      activeLevelCodeEditor.getTerminal().toggle()
+      activeTerminal = activeLevelCodeEditor.getTerminal()
+      if activeTerminal.isVisible()
+        activeTerminal.hide()
+      else
+        activeTerminal.show()
+        activeTerminal.focus()
     else
       event.abortKeyBinding()
 
@@ -220,6 +223,18 @@ class WorkspaceManager
   doDecreaseTerminalFontSize: (event) =>
     if (activeTerminal = workspace.getActiveTerminal())?
       activeTerminal.decreaseFontSize()
+    else
+      event.abortKeyBinding()
+
+  doScrollTerminalToTop: (event) =>
+    if (activeTerminal = workspace.getActiveTerminal())?
+      activeTerminal.scrollToTop()
+    else
+      event.abortKeyBinding()
+
+  doScrollTerminalToBottom: (event) =>
+    if (activeTerminal = workspace.getActiveTerminal())?
+      activeTerminal.scrollToBottom()
     else
       event.abortKeyBinding()
 
