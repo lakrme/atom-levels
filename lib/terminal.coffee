@@ -17,6 +17,15 @@ class Terminal
   @deserialize: ({data}) ->
     new Terminal(data)
 
+  ## IDs for typed messages ----------------------------------------------------
+
+  @typedMessageIdCounter: 0
+
+  @getTypedMessageId: ->
+    id = @typedMessageIdCounter
+    @typedMessageIdCounter++
+    id
+
   ## Construction and destruction ----------------------------------------------
 
   constructor: (params={}) ->
@@ -225,51 +234,38 @@ class Terminal
 
   ## Writing typed messages to the terminal ------------------------------------
 
-  writeTypedMessage: ({head,body,type,icon,data}={}) ->
+  writeTypedMessage: ({type,head,body,data}={}) ->
     if head or body
-      startTag = ''
-      endTag = ''
-      if type isnt 'normal' or icon or data?
-        startTag  = "<message type=\"#{type}\""
-        startTag += " icon=\"#{icon}\""          if icon
-        startTag += " data-#{key}=\"#{value}\""  for key,value of data
-        startTag += '>\n'
-        headElem  = "<head>\n#{head}\n</head>\n" if head
-        bodyElem  = "<body>\n#{body}\n</body>\n" if body
-        endTag    = "</message>\n"
-      else
-        headElem = "#{head}\n" if head
-        bodyElem = "#{body}\n"
+      startTag  = "<message type=\"#{type}\""
+      startTag += " data-#{key}=\"#{value}\""  for key,value of data
+      startTag += '>\n'
+      headElem  = "<head>\n#{head}\n</head>\n" if head
+      bodyElem  = "<body>\n#{body}\n</body>\n" if body
+      endTag    = "</message>\n"
       typedMessage = startTag + headElem + bodyElem + endTag
       @write(typedMessage)
 
-  writeSubtle: ({head,body,icon}={}) ->
-    @writeTypedMessage({head,body,type: 'subtle',icon})
+  writeSubtle: (message) ->
+    @writeTypedMessage({type: 'subtle',body: message})
 
-  writeInfo: ({head,body,icon}={}) ->
-    @writeTypedMessage({head,body,type: 'info',icon})
+  writeInfo: (message) ->
+    @writeTypedMessage({type: 'info',body: message})
 
-  writeSuccess: ({head,body,icon}={}) ->
-    @writeTypedMessage({head,body,type: 'success',icon})
+  writeSuccess: (message) ->
+    @writeTypedMessage({type: 'success',body: message})
 
-  writeWarning: ({head,body,icon,row,col}={}) ->
-    data = {}
-    data.row = row if row
-    data.col = col if row and col
-    @writeTypedMessage({head,body,type: 'warning',icon,data})
+  writeWarning: (message) ->
+    @writeTypedMessage({type: 'warning',body: message})
 
-  writeError: ({head,body,icon,row,col}={}) ->
-    data = {}
-    data.row = row if row
-    data.col = col if row and col
-    @writeTypedMessage({head,body,type: 'error',icon,data})
+  writeError: (Message) ->
+    @writeTypedMessage({type: 'error',body: message})
 
   ## Reading typed message from the output -------------------------------------
 
   updateTypedMessageBufferOnDidCreateNewLine: ->
     if @typedMessageBuffer?
       @typedMessageBuffer += "#{@typedMessageCurrentLineBuffer}\n"
-      if @typedMessageCurrentLineBuffer.match(/^<\/message>$/)?
+      if @typedMessageCurrentLineBuffer.match(/^<\/message>/)?
         typedMessage = @readTypedMessage(@typedMessageBuffer)
         @typedMessageBuffer = null
         @typedMessageCurrentLineBuffer = null
@@ -286,7 +282,7 @@ class Terminal
 
   readTypedMessage: (buffer) ->
     typedMessageXml = $($.parseXML(buffer)).find('message')
-    typedMessage = {}
+    typedMessage = {id: @constructor.getTypedMessageId()}
 
     # read attributes
     typedMessageXml.each ->

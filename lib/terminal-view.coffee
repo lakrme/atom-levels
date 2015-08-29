@@ -143,6 +143,7 @@ class TerminalView extends View
     bodyLines = typedMessage.body.split('\n').splice(1).slice(0,-1)
 
     # process execution warnings and errors
+    id = typedMessage.id
     type = typedMessage.type
     if (type is 'warning' or type is 'error') and typedMessage.data.source?
       # create issue link element
@@ -150,7 +151,9 @@ class TerminalView extends View
       endTag = ''
       if (row = typedMessage.data.row)?
         col = typedMessage['data-col']
-        startTag  = "<a class=\"#{type}-link\" href=\"#\" data-row=\"#{row}\""
+        startTag  = "<a class=\"#{type}-link\" href=\"#\""
+        startTag += " data-id=\"#{id}\""
+        startTag += " data-row=\"#{row}\""
         startTag += " data-col=\"#{col}\"" if col?
         startTag += ">"
         endTag    = "</a>"

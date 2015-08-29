@@ -29,7 +29,7 @@ class WorkspaceManager
       terminalView = new TerminalView(terminal)
       # initialize the terminal
       terminal.newLine()
-      terminal.writeInfo({body: 'Welcome to the Levels terminal!'})
+      terminal.writeInfo('Welcome to the Levels terminal!')
       terminalView
 
     # create workspace view components

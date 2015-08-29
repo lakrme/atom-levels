@@ -7,7 +7,7 @@ class AnnotationManager
 
   constructor: (@levelCodeEditor) ->
     @textEditor = @levelCodeEditor.getTextEditor()
-    @markers = []
+    @markersByExecutionIssueId = {}
 
   ## Level code editor annotations ---------------------------------------------
 
@@ -24,15 +24,10 @@ class AnnotationManager
       type: 'line-number'
       class: "annotation annotation-#{type}"
 
-    marker.onDidDestroy => console.log "lol"
+    @markersByExecutionIssueId[executionIssue.getId()] = marker
 
-    @markers.push(marker)
+  removeAnnotationForExecutionIssue: (executionIssue) ->
+    @markersByExecutionIssueId[executionIssue.getId()].destroy()
+    delete @markersByExecutionIssueId[executionIssue.getId()]
 
 # ------------------------------------------------------------------------------
-
-  #
-  #
-  # removeIssueAnnotationsForTextEditor: (textEditor) ->
-  #   if (annotations = @textEditorIssueAnnotations[textEditor.id])?
-  #     marker.destroy() for marker in annotations
-  #     delete @textEditorIssueAnnotations[textEditor.id]

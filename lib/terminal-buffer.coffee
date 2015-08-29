@@ -173,7 +173,6 @@ class TerminalBuffer
       when 'inherit' then commands = @commands
 
     @prompt = prompt
-    console.log @prompt
     @commands = commands
     @commandNotFound = commandNotFound
     @inputHistory = []

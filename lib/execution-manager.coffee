@@ -1,5 +1,5 @@
 exec = require('child_process').exec
-path  = require('path')
+path = require('path')
 
 # ------------------------------------------------------------------------------
 
@@ -20,20 +20,26 @@ class ExecutionManager
     @language = @levelCodeEditor.getLanguage()
     @level = @levelCodeEditor.getLevel()
     @terminal = @levelCodeEditor.getTerminal()
-
-    if @isExecuting()
-      throw new Error('execution is already running!')
-    if @terminal.isExecuting()
-      throw new Error('terminal is busy!')
-    unless (executionMode = @language.getExecutionMode())?
-      throw new Error('no execution mode found!')
-    unless (filePath = @textEditor.getPath())?
-      throw new Error('file not saved!')
-
     dirPath = @language.getDirectoryPath()
 
-    executionMsg = "Running #{@language.getName()} (#{@level.getName()}) program..."
-    @terminal.writeLn(executionMsg)
+    if @isExecuting()
+      throw new Error
+        name: 'ExecutionNotPossibleError'
+        message: ''
+    if @terminal.isExecuting()
+      throw new Error
+        name: 'ExecutionError'
+        message: 'Execution is already running.'
+    unless (executionMode = @language.getExecutionMode())?
+      throw new Error
+        name: 'ExecutionError'
+        message: ''
+    unless (filePath = @textEditor.getPath())?
+      throw new Error
+        name: 'ExecutionError'
+        message: ''
+
+    @terminal.writeLn('Running level code...')
 
     # build command
     cmd = [
@@ -56,8 +62,9 @@ class ExecutionManager
       @process.stdin.write("#{input}\n")
     @process.on 'close', =>
       @didStopExecution()
+    @didStartExecution()
 
-    # enter scope and
+  didStartExecution: ->
     @terminal.enterScope()
     @terminal.didStartExecution()
     @levelCodeEditor.didStartExecution()

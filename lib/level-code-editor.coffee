@@ -29,23 +29,24 @@ class LevelCodeEditor
 
   constructor: ({@textEditor,language,level,@terminal}) ->
     @emitter = new Emitter
-    @setLanguage(language,level)
-    @terminal ?= new Terminal
-    @terminal.acquire()
 
     # create annotation and execution manager instances
     @annotationManager = new AnnotationManager(@)
     @executionManager = new ExecutionManager(@)
+
+    # initialize properties
+    @setLanguage(language,level)
+    @terminal ?= new Terminal
+    @terminal.acquire()
 
     # text buffer subscriptions
     @bufferSubscr = @textEditor.getBuffer().onWillSave =>
       @writeLanguageInformationFileHeaderIf('before saving the buffer')
 
     # terminal subscriptions
-    @executionIssuesById = {}
+    @currentExecutionIssuesById = {}
     @terminalSubscrs = new CompositeDisposable
     @terminalSubscrs = @terminal.onDidReadTypedMessage (typedMessage) =>
-      console.log typedMessage
       @readExecutionIssueFromTypedMessage(typedMessage)
 
   destroy: ->
@@ -109,13 +110,11 @@ class LevelCodeEditor
   ## Setting the language and the level ----------------------------------------
 
   setLanguage: (language,level) ->
-    # if @isExecuting()
-    #   @restore()
-    #   throw new Error
-    #     name: 'LanguageInformationError'
-    #     message: """
-    #       asjhdakjshdasjdahsm
-    #     """
+    if @isExecuting()
+      @restore()
+      throw new Error
+        name: 'LanguageError'
+        message: 'DUMMY'
 
     if language.getName() is @language?.getName()
       @setLevel(level) if level?
@@ -127,8 +126,10 @@ class LevelCodeEditor
         level: @level
 
   setLevel: (level) ->
-    # if @isExecuting()
-    #   throw new Error({name: 'LanguageInformationError'})
+    if @isExecuting()
+      throw new Error
+        name: 'LanguageError'
+        message: 'DUMMY'
 
     if @language.hasLevel(level)
       unless level.getName() is @level?.getName()
@@ -159,6 +160,7 @@ class LevelCodeEditor
     @executionManager.startExecution()
 
   didStartExecution: ->
+    @removeExecutionIssues()
     @emitter.emit('did-start-execution')
     @emitter.emit('did-change-is-executing',true)
 
@@ -186,19 +188,23 @@ class LevelCodeEditor
         @addExecutionIssue(executionIssue)
 
   addExecutionIssue: (executionIssue) ->
-    console.log executionIssue
-    @executionIssuesById[executionIssue.getId()] = executionIssue
+    @currentExecutionIssuesById[executionIssue.getId()] = executionIssue
     @annotationManager.addAnnotationForExecutionIssue(executionIssue)
 
-  removeAllExecutionIssues: ->
-    @activeIssuesById = {}
+  removeExecutionIssue: (executionIssue) ->
+    @annotationManager.removeAnnotationForExecutionIssue(executionIssue)
+    delete @currentExecutionIssuesById[executionIssue.getId()]
+    executionIssue.destroy()
 
-  getExecutionIssueById: (executionIssueId) ->
-    @executionIssuesById[executionIssueId]
+  removeExecutionIssues: ->
+    for _,executionIssue of @currentExecutionIssuesById
+      @removeExecutionIssue(executionIssue)
 
-  # getExecutionIssues: ->
-  #   for _,executionIssue of @executionIssues
-  #   executionIssue for id,language of @languagesByName
+  getCurrentExecutionIssueById: (executionIssueId) ->
+    @currentExecutionIssuesById[executionIssueId]
+
+  getCurrentExecutionIssues: ->
+    executionIssue for _,executionIssue of @currentExecutionIssuesById
 
   ## Serialization -------------------------------------------------------------
 
