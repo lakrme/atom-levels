@@ -3,5 +3,7 @@ grammars/*
 languages/*
 npm-debug.log
 node_modules
+run
+run.exe
 
 !languages/empty.cson
