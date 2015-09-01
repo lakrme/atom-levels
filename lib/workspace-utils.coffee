@@ -1,7 +1,7 @@
 {Point}          = require('atom')
 path             = require('path')
 
-languageRegistry = require('./language-registry').getInstance()
+languageManager  = require('./language-manager').getInstance()
 
 # ------------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ module.exports =
     language = result?.language
     level = result?.level
     language ?= @readLanguageFromFileExtension(textEditor)
-    language ?= languageRegistry.getLanguageForGrammar(textEditor.getGrammar())
+    language ?= languageManager.getLanguageForGrammar(textEditor.getGrammar())
     if language?
       return {language,level}
     undefined
@@ -44,7 +44,7 @@ module.exports =
     if (match = @FILE_HEADER_REG_EXP.exec(fileHeader))?
       languageName = match[1]
       levelName = match[2]
-      if (language = languageRegistry.getLanguageForName(languageName))?
+      if (language = languageManager.getLanguageForName(languageName))?
         result = {language}
         if (level = language.getLevelForName(levelName))?
           result.level = level
@@ -56,7 +56,7 @@ module.exports =
   readLanguageFromFileExtension: (textEditor) ->
     if (filePath = textEditor.getBuffer().getPath())?
       fileType = path.extname(filePath).substr(1)
-      results = languageRegistry.getLanguagesForFileType(fileType)
+      results = languageManager.getLanguagesForFileType(fileType)
       # TODO maybe show a notification for the >1 case
       if results.length >= 1
         result = results[0]

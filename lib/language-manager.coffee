@@ -1,5 +1,5 @@
 {Emitter}     = require('atom')
-fs            = require('fs')
+fs            = require('fs-plus')
 path          = require('path')
 CSON          = require('season')
 
@@ -10,7 +10,7 @@ Level         = require('./level')
 
 # ------------------------------------------------------------------------------
 
-class LanguageRegistry
+class LanguageManager
 
   ## Construction and initialization -------------------------------------------
 
@@ -18,12 +18,13 @@ class LanguageRegistry
     @emitter = new Emitter
     @languagesDirPath = path.join(path.dirname(__dirname),'languages')
     @languagesByName = {}
+    @installing = false
 
   loadInstalledLanguages: ->
     for dirName in fs.readdirSync(@languagesDirPath)
       dirPath = path.join(@languagesDirPath,dirName)
       if fs.statSync(dirPath).isDirectory(dirPath)
-        @loadLanguage(dirPath)
+        @loadLanguage(path.join(dirPath,'config.json'))
     undefined
 
   ## Event subscription --------------------------------------------------------
@@ -41,7 +42,19 @@ class LanguageRegistry
   onDidRemoveLanguages: (callback) ->
     @emitter.on('did-remove-languages',callback)
 
-  ## Adding languages to the registry ------------------------------------------
+  onDidStartInstalling: (callback) ->
+    @emitter.on('did-start-installing',callback)
+
+  onDidStopInstalling: (callback) ->
+    @emitter.on('did-stop-installing',callback)
+
+  # onDidBeginInstallationStep: (callback) ->
+  #   @emitter.on('did-begin-installation-phase',callback)
+  #
+  # onDidEndInstallationStep: (callback) ->
+  #   @emitter.on('did-end-installation-phase',callback)
+
+  ## Adding languages ----------------------------------------------------------
 
   addLanguage: (language) ->
     # set up event handlers
@@ -53,16 +66,15 @@ class LanguageRegistry
     @emitter.emit('did-add-language',language)
     undefined
 
-  readLanguage: (languageDirPath) ->
-    configFilePath = path.join(languageDirPath,'config.json')
+  readLanguage: (configFilePath) ->
     @readLanguageFromConfigurationFile(configFilePath)
 
-  loadLanguage: (languageDirPath) ->
-    language = @readLanguage(languageDirPath)
+  loadLanguage: (configFilePath) ->
+    language = @readLanguage(configFilePath)
     @addLanguage(language)
     language
 
-  ## Removing languages from the registry --------------------------------------
+  ## Removing languages --------------------------------------------------------
 
   removeLanguage: (language) ->
     removedLanguages = @removeLanguages([language])
@@ -80,7 +92,7 @@ class LanguageRegistry
       @emitter.emit('did-remove-languages',removedLanguages)
     removedLanguages
 
-  ## Querying the language registry --------------------------------------------
+  ## Queries -------------------------------------------------------------------
 
   getLanguageForName: (languageName) ->
     @languagesByName[languageName]
@@ -122,8 +134,8 @@ class LanguageRegistry
     properties.compilerCmdPattern = config.compilerCmdPattern
     properties.executionCmdPattern = config.executionCmdPattern
 
-    # set the language directory path
-    properties.dirPath = path.dirname(configFilePath)
+    # set configuration file path
+    properties.configFilePath = configFilePath
 
     # set the default grammar
     if (defaultGrammarPath = config.defaultGrammar)?
@@ -132,7 +144,6 @@ class LanguageRegistry
     else
       defaultGrammarPath = path.join(@languagesDirPath,'empty.cson')
     defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
-
     grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
     grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
     scopeName = config.scopeName
@@ -169,23 +180,38 @@ class LanguageRegistry
       else
         properties.lastActiveLevel ?= undefined
 
+    # set executable path
+    executablePath = config.executable
+    unless path.isAbsolute(executablePath)
+      executablePath = path.join(configDirPath,executablePath)
+    properties.executablePath = executablePath
+
     new Language(properties,levels)
 
   writeLanguageToConfigurationFile: (language,configFilePath) ->
+    defaultGrammarPath = language.getDefaultGrammar().path
+    emptyGrammarPath = path.join(@languagesDirPath,'empty.cson')
+    configDirPath = path.dirname(configFilePath)
     config = {}
     config.name = language.getName()
     config.levels =
       for level in language.getLevels()
-        name: level.getName()
-        description: level.getDescription()
-        # TODO filter default/empty grammar
-        grammar: level.getGrammar().path
+        name = level.getName()
+        description = level.getDescription()
+        grammar = undefined
+        grammarPath = level.getGrammar().path
+        unless grammarPath is defaultGrammarPath
+          grammar = path.relative(configDirPath,grammarPath)
+        {name,description,grammar}
     config.lastActiveLevel = language.getLastActiveLevel()?.getName()
-    config.defaultGrammar = language.getDefaultGrammar()?.path
+    unless defaultGrammarPath is emptyGrammarPath
+      config.defaultGrammar = path.relative(configDirPath,defaultGrammarPath)
     config.scopeName = language.getScopeName()
     config.levelCodeFileTypes = language.getLevelCodeFileTypes()
     config.objectCodeFileType = language.getObjectCodeFileType()
     config.lineCommentPattern = language.getLineCommentPattern()
+    executablePath = language.getExecutablePath()
+    config.executable = path.relative(configDirPath,executablePath)
     config.executionMode = language.getExecutionMode()
     config.interpreterCmdPattern = language.getInterpreterCommandPattern()
     config.compilerCmdPattern = language.getCompilerCommandPattern()
@@ -196,18 +222,124 @@ class LanguageRegistry
 
   applyLanguageChanges: (language,changes) ->
     # TODO do something with the changes
-    configFilePath = path.join(language.getDirectoryPath(),'config.json')
+    configFilePath = language.getConfigurationFilePath()
     @writeLanguageToConfigurationFile(language,configFilePath)
     undefined
+
+  ## Installing and uninstalling languages -------------------------------------
+
+  isInstalling: ->
+    @installing
+
+  installLanguage: (configFilePath) ->
+    @installing = true
+    @emitter.emit('did-start-installing')
+    @validateConfigurationFile(configFilePath)
+
+    configDirPath = path.dirname(configFilePath)
+    config = CSON.readFileSync(configFilePath)
+
+    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
+    grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
+    languageNameFormatted = config.name.replace(/\s+/g,'-').toLowerCase()
+    languageDirPath = path.join(@languagesDirPath,languageNameFormatted)
+    languageGrammarsDirPath = path.join(languageDirPath,'grammars')
+    fs.mkdirSync(languageDirPath)
+    fs.mkdirSync(languageGrammarsDirPath)
+
+    configCopy = {}
+    configCopy.name = config.name
+    configCopy.scopeName = "levels.source.#{languageNameFormatted}"
+
+    configCopy.levels = []
+    for levelConfig in config.levels
+      levelConfigCopy = {}
+      levelConfigCopy.name = levelConfig.name
+      levelConfigCopy.description = levelConfig.description
+      if (grammarPath = levelConfig.grammar)?
+        levelNameFormatted = levelConfig.name.replace(/\s+/g,'-').toLowerCase()
+        levelConfigCopy.grammar = "grammars/#{levelNameFormatted}.cson"
+        # copy level grammar to directory
+        unless path.isAbsolute(grammarPath)
+          grammarPath = path.join(configDirPath,grammarPath)
+        grammar = CSON.readFileSync(grammarPath)
+        grammarCopy = grammar
+        delete grammarCopy.name
+        delete grammarCopy.fileTypes
+        delete grammarCopy.firstLineMatch
+        grammarCopy.scopeName = configCopy.scopeName
+        grammarCopyPath = path.join(languageDirPath,levelConfigCopy.grammar)
+        CSON.writeFileSync(grammarCopyPath,grammarCopy)
+      configCopy.levels.push(levelConfigCopy)
+
+    if (defaultGrammarPath = config.defaultGrammar)?
+      configCopy.defaultGrammar = 'grammars/default.cson'
+      # write default grammar to directory
+      unless path.isAbsolute(defaultGrammarPath)
+        defaultGrammarPath = path.join(configDirPath,defaultGrammarPath)
+      defaultGrammar = CSON.readFileSync(defaultGrammarPath)
+      defaultGrammarCopy = defaultGrammar
+      delete defaultGrammarCopy.name
+      delete defaultGrammarCopy.fileTypes
+      delete defaultGrammarCopy.firstLineMatch
+      defaultGrammarCopy.scopeName = configCopy.scopeName
+      defaultGrammarCopyPath = \
+        path.join(languageDirPath,configCopy.defaultGrammar)
+      CSON.writeFileSync(defaultGrammarCopyPath,defaultGrammarCopy)
+
+    configCopy.levelCodeFileTypes = config.levelCodeFileTypes
+    configCopy.objectCodeFileType = config.objectCodeFileType
+    configCopy.lineCommentPattern = config.lineCommentPattern
+
+    configCopy.executable = 'run'
+    configCopy.executable += '.exe' if process.platform is 'win32'
+    executablePath = config.executable
+    unless path.isAbsolute(executablePath)
+      executablePath = path.join(configDirPath,executablePath)
+    executableCopyPath = path.join(languageDirPath,configCopy.executable)
+    readStream = fs.createReadStream(executablePath)
+    writeStream = fs.createWriteStream(executableCopyPath)
+    readStream.pipe(writeStream)
+    writeStream.on 'finish', =>
+      fs.chmodSync(executableCopyPath,'755')
+
+    configCopy.interpreterCmdPattern = config.interpreterCmdPattern
+    configCopy.compilerCmdPattern = config.compilerCmdPattern
+    configCopy.executionCmdPattern = config.executionCmdPattern
+
+    configCopyFilePath = path.join(languageDirPath,'config.json')
+    CSON.writeFileSync(configCopyFilePath,configCopy)
+
+    # write dummy grammar
+    dummyGrammar =
+      name: grammarName
+      scopeName: configCopy.scopeName
+      fileTypes: configCopy.levelCodeFileTypes
+    grammarsDirPath = path.join(path.dirname(__dirname),'grammars')
+    dummyGrammarPath = \
+      path.join(grammarsDirPath,"#{languageNameFormatted}.cson")
+    CSON.writeFileSync(dummyGrammarPath,dummyGrammar)
+
+    @loadLanguage(configCopyFilePath)
+    atom.grammars.loadGrammarSync(dummyGrammarPath)
+
+    @installing = false
+    @emitter.emit('did-stop-installing')
+
+  uninstallLanguage: (language) ->
+
+  ## Validation ----------------------------------------------------------------
+
+  validateConfigurationFile: (configFilePath) ->
 
 # ------------------------------------------------------------------------------
 
 module.exports =
-class LanguageRegistryProvider
+class LanguageManagerProvider
 
   instance = null
 
   @getInstance: ->
-    instance ?= new LanguageRegistry
+    instance ?= new LanguageManager
 
 # ------------------------------------------------------------------------------

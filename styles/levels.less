@@ -2,6 +2,76 @@
 
 .levels-view {
 
+  &.language-manager {
+
+    .close-button {
+      position: absolute;
+      right: @component-padding;
+      top: @component-padding+@component-padding/2;
+      &.icon::before {margin-right: 0;}
+    }
+
+    .head {
+      .heading>h1 {
+        color: @text-color-highlight;
+        font-weight: bold;
+        font-size: 18px;
+        margin: @component-padding/2 0 @component-padding 0;
+      }
+      .subheading>h2 {
+        font-size: 16px;
+        margin: 0 0 @component-padding 0;
+      }
+    }
+
+    .body {
+      background-color: @base-background-color;
+      border-radius: @component-border-radius;
+      height: 400px;
+      overflow: scroll;
+      padding: @component-padding;
+
+      .language-list {
+        .language-card {
+          background-color: lighten(@tool-panel-background-color,7%);
+          border: 1px solid @base-border-color;
+          border-radius: 2*@component-border-radius;
+          font-weight: 300;
+          margin-bottom: @component-padding/2;
+          padding: @component-padding;
+          .card-name {
+            color: @text-color-highlight;
+            font-size: 12px;
+          }
+          .controls {
+            padding-top: 5px;
+            .btn-group {
+              button {
+                font-size: 11px;
+                padding: 3px 6px;
+              }
+            }
+          }
+        }
+        .language-card:hover {
+          background-color: lighten(@tool-panel-background-color,9%);
+        }
+      }
+    }
+
+    .control-bar {
+      padding: @component-padding 0 0 0;
+      .control-bar-left {
+        display: inline;
+        width: 50%;
+      }
+      .control-bar-right {
+        display: inline;
+        float: right;
+      }
+    }
+  }
+
   &.level-status {
     a, a:focus, a:hover {
       color: @text-color;
@@ -36,20 +106,13 @@
       a, a:focus, a:hover {
         color: @text-color;
         outline: 0;
-
-        .icon::before {
-          font-size: 14px;
-          height: 14px;
-          margin-right: 0;
-          width: 14px;
-        }
       }
 
       .control-bar-left {
         display: inline;
         overflow-x: scroll;
         width: 50%;
-        a {margin-right: 10px;}
+        .control-element {padding-right: 10px;}
         .control-bar-separator {margin-right: 10px;}
       }
 
@@ -69,9 +132,30 @@
         }
       }
 
+      .control-element {
+        display: inline;
+        select {
+          background-color: transparent;
+          border: none;
+          box-shadow: none;
+          color: @text-color;
+          cursor: pointer;
+          margin-left: 5px;
+          -webkit-appearance: none;
+          &:hover {text-decoration: underline;}
+        }
+      }
+
       .control-bar-separator {
         border-left: 1px solid @text-color-subtle;
         display: inline;
+      }
+
+      .icon::before {
+        font-size: 14px;
+        height: 14px;
+        margin-right: 0;
+        width: 14px;
       }
     }
 
@@ -108,17 +192,16 @@
 
     .terminal-info {
       background-color: #000;
-      border: 1px solid @text-color;
-      // border-radius: 2px;
+      border: 1px solid #fff;
+      border-radius: @component-border-radius;
       bottom: 10px;
-      color: @text-color;
+      color: #fff;
       display: none;
       height: 25px;
       line-height: 15px;
       padding: 4px 12.5px;
       position: absolute;
       right: 10px;
-      // width: 100px;
     }
   }
 }

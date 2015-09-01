@@ -76,15 +76,7 @@ class TerminalView extends View
   ## Updating this view --------------------------------------------------------
 
   updateOnDidChangeIsVisible: (@isVisible) ->
-    if @isVisible
-      @show()
-      @on 'click', '.warning-link', (event) =>
-        @didClickIssueLink(event.target)
-      @on 'click', '.error-link', (event) =>
-        @didClickIssueLink(event.target)
-    else
-      @hide()
-      @off('click')
+    if @isVisible then @show() else @hide()
 
   updateOnDidChangeSize: (@size) ->
     @height(@size*@lineHeight)
@@ -177,15 +169,5 @@ class TerminalView extends View
       @activeLine.append(line)
       if i isnt htmlLines.length - 1
         @updateOnDidCreateNewLine()
-
-  ## Warning and error links ---------------------------------------------------
-
-  didClickIssueLink: (element) ->
-    row = parseInt(element.getAttribute('data-row')) - 1
-    col = parseInt(element.getAttribute('data-col') ? 0) - 1
-    textEditor = atom.workspace.getActiveTextEditor()
-    pos = textEditor.clipBufferPosition([row,col])
-    atom.views.getView(textEditor).focus()
-    textEditor.setCursorBufferPosition(pos)
 
 # ------------------------------------------------------------------------------

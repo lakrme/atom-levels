@@ -46,10 +46,10 @@ class Terminal
         help: @helpCommand
         set: @setCommand
         unset: @unsetCommand
-        hide: @hideCommand
         clear: @clearCommand
         topkek: @topkekCommand
 
+    @focused = false
     @refCount = 0
     @executing = false
     @typedMessageBuffer = null
@@ -99,6 +99,9 @@ class Terminal
 
   onDidFocus: (callback) ->
     @emitter.on('did-focus',callback)
+
+  onDidBlur: (callback) ->
+    @emitter.on('did-blur',callback)
 
   onDidScrollToTop: (callback) ->
     @emitter.on('did-scroll-to-top',callback)
@@ -200,8 +203,22 @@ class Terminal
     body.removeChild(dummyElement)
     charWidth
 
+  hasFocus: ->
+    @focused
+
   focus: ->
     @emitter.emit('did-focus')
+    @didFocus()
+
+  didFocus: ->
+    @focused = true
+
+  blur: ->
+    @emitter.emit('did-blur')
+    @didBlur()
+
+  didBlur: ->
+    @focused = false
 
   scrollToTop: ->
     @emitter.emit('did-scroll-to-top')
@@ -336,9 +353,6 @@ class Terminal
         when 'fontSize'
           @setFontSize(terminalUtils.DEFAULT_FONT_SIZE)
         else @writeLn("unset: #{propertyStr}: unknown property")
-
-  hideCommand: =>
-    @hide()
 
   clearCommand: =>
     @clear()

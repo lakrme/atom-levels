@@ -1,6 +1,6 @@
 {CompositeDisposable,Emitter} = require('atom')
 
-languageRegistry              = require('./language-registry').getInstance()
+languageManager              = require('./language-manager').getInstance()
 
 workspaceUtils                = require('./workspace-utils')
 
@@ -19,7 +19,7 @@ class LevelCodeEditor
   atom.deserializers.add(this)
   @version: 1
   @deserialize: ({data},textEditor) ->
-    if (language = languageRegistry.getLanguageForName(data.languageName))?
+    if (language = languageManager.getLanguageForName(data.languageName))?
       level = language.getLevelForName(data.levelName)
       terminal = atom.deserializers.deserialize(data.terminalState)
       return new LevelCodeEditor({textEditor,language,level,terminal})

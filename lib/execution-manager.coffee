@@ -20,7 +20,7 @@ class ExecutionManager
     @language = @levelCodeEditor.getLanguage()
     @level = @levelCodeEditor.getLevel()
     @terminal = @levelCodeEditor.getTerminal()
-    dirPath = @language.getDirectoryPath()
+    runPath = @language.getExecutablePath()
 
     if @isExecuting()
       throw new Error
@@ -43,7 +43,7 @@ class ExecutionManager
 
     # build command
     cmd = [
-      "#{path.join(dirPath,'run')}"
+      "#{runPath}"
       '-m',"#{executionMode}"
       "#{@level.getNumber()}"
       "#{filePath}"
@@ -52,7 +52,7 @@ class ExecutionManager
 
     # spawn the child process
     @process = exec cmd,
-      cwd: dirPath
+      cwd: path.dirname(runPath)
       env: process.env
 
     # set up process handle subscriptions

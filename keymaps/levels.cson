@@ -1,9 +1,13 @@
 'atom-workspace':
-  'ctrl-cmd-l': 'levels:toggle-level-select'
-  'ctrl-cmd-t': 'levels:toggle-terminal'
-  'ctrl-cmd-+': 'levels:increase-terminal-font-size'
-  'ctrl-cmd--': 'levels:decrease-terminal-font-size'
-  'ctrl-cmd-up': 'levels:scroll-terminal-to-top'
-  'ctrl-cmd-down': 'levels:scroll-terminal-to-bottom'
-  'ctrl-cmd-r': 'levels:start-execution'
-  'ctrl-cmd-s': 'levels:stop-execution'
+  'ctrl-alt-m': 'levels:toggle-language-manager'
+
+'.levels-view, atom-text-editor[data-grammar~=levels]':
+  'ctrl-alt-l': 'levels:toggle-level-select'
+  'ctrl-alt-t': 'levels:toggle-terminal'
+  'ctrl-alt-+': 'levels:increase-terminal-font-size'
+  'ctrl-alt--': 'levels:decrease-terminal-font-size'
+  'ctrl-alt-f': 'levels:toggle-terminal-focus'
+  'ctrl-alt-up': 'levels:scroll-terminal-to-top'
+  'ctrl-alt-down': 'levels:scroll-terminal-to-bottom'
+  'ctrl-alt-r': 'levels:start-execution'
+  'ctrl-alt-s': 'levels:stop-execution'

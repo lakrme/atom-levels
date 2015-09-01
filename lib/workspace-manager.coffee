@@ -1,17 +1,16 @@
 {CompositeDisposable} = require('atom')
 path                  = require('path')
 
-languageInstaller     = require('./language-installer').getInstance()
-languageRegistry      = require('./language-registry').getInstance()
+languageManager       = require('./language-manager').getInstance()
 workspace             = require('./workspace').getInstance()
 
 notificationUtils     = require('./notification-utils')
 workspaceUtils        = require('./workspace-utils')
 
+LanguageManagerView   = require('./language-manager-view')
 LevelCodeEditor       = require('./level-code-editor')
 LevelStatusView       = require('./level-status-view')
 LevelSelectView       = require('./level-select-view')
-LanguageConfigView    = require('./language-config-view')
 TerminalPanelView     = require('./terminal-panel-view')
 TerminalView          = require('./terminal-view')
 Terminal              = require('./terminal')
@@ -25,18 +24,19 @@ class WorkspaceManager
   setUpWorkspace: (@state) ->
     # add view providers
     @viewProviders = new CompositeDisposable
-    @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
-      terminalView = new TerminalView(terminal)
-      # initialize the terminal
-      terminal.newLine()
-      terminal.writeInfo('Welcome to the Levels terminal!')
-      terminalView
+    @viewProviders.add atom.views.addViewProvider Terminal, \
+      (terminal) ->
+        terminalView = new TerminalView(terminal)
+        # initialize the terminal
+        terminal.newLine()
+        terminal.writeInfo('Welcome to the Levels terminal!')
+        terminalView
 
     # create workspace view components
+    @languageManagerView = new LanguageManagerView
     @levelStatusView = new LevelStatusView
     @levelSelectView = new LevelSelectView
     @terminalPanelView = new TerminalPanelView
-    @languageConfigView = new LanguageConfigView
 
   cleanUpWorkspace: ->
     # remove view providers
@@ -53,20 +53,20 @@ class WorkspaceManager
 
   activateEventHandlers: ->
     @subscribeToAtomWorkspace()
-    @subscribeToLanguageRegistry()
+    @subscribeToLanguageManager()
 
   deactivateEventHandlers: ->
     @unsubscribeFromAtomWorkspace()
-    @unsubscribeFromLanguageRegistry()
+    @unsubscribeFromLanguageManager()
 
   activateCommandHandlers: ->
     @commandHandlers = atom.commands.add 'atom-workspace',
-      'levels:install-languages': @doInstallLanguages
-      'levels:uninstall-languages': @doUninstallLanguages
+      'levels:toggle-language-manager': @doToggleLanguageManager
       'levels:toggle-level-select': @doToggleLevelSelect
       'levels:toggle-terminal': @doToggleTerminal
       'levels:increase-terminal-font-size': @doIncreaseTerminalFontSize
       'levels:decrease-terminal-font-size': @doDecreaseTerminalFontSize
+      'levels:toggle-terminal-focus': @doToggleTerminalFocus
       'levels:scroll-terminal-to-top': @doScrollTerminalToTop
       'levels:scroll-terminal-to-bottom': @doScrollTerminalToBottom
       'levels:start-execution': @doStartExecution
@@ -118,7 +118,7 @@ class WorkspaceManager
       levelCodeEditor = new LevelCodeEditor({textEditor,language}) if language?
 
     unless levelCodeEditor?
-      language = languageRegistry.getLanguageForGrammar(textEditor.getGrammar())
+      language = languageManager.getLanguageForGrammar(textEditor.getGrammar())
       levelCodeEditor = new LevelCodeEditor({textEditor,language}) if language?
 
     workspace.addLevelCodeEditor(levelCodeEditor) if levelCodeEditor?
@@ -147,15 +147,18 @@ class WorkspaceManager
     @unsubscribeFromTextEditor(textEditor)
 
   handleDidChangeGrammar: (textEditor,oldGrammarName,newGrammar) ->
+    console.log oldGrammarName
+    console.log newGrammar
     # this condition prevents the handler from being executed for grammar
     # changes caused by level code editor initalizations or level changes
     unless newGrammar.name is oldGrammarName
+      console.log "here"
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
         textEditor.onDidChangeGrammar (grammar) =>
           @handleDidChangeGrammar(textEditor,newGrammar.name,grammar)
 
-      language = languageRegistry.getLanguageForGrammar(newGrammar)
+      language = languageManager.getLanguageForGrammar(newGrammar)
       if workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
         if language?
@@ -174,28 +177,25 @@ class WorkspaceManager
             workspace.setActiveLevelCodeEditor(levelCodeEditor)
     else
       if path.dirname(newGrammar.path).endsWith('levels/grammars')
+        console.log "here3"
         workspace.getLevelCodeEditorForId(textEditor.id).restore()
 
-  ## Language registry subscriptions -------------------------------------------
+  ## Language manager subscriptions --------------------------------------------
 
-  subscribeToLanguageRegistry: ->
-    @languageRegistrySubscrs = new CompositeDisposable
-    @languageRegistrySubscrs.add languageRegistry.onDidRemoveLanguages \
+  subscribeToLanguageManager: ->
+    @languageManagerSubscrs = new CompositeDisposable
+    @languageManagerSubscrs.add languageManager.onDidRemoveLanguages \
       (removedLanguages) => @handleDidRemoveLanguages(removedLanguages)
 
-  unsubscribeFromLanguageRegistry: ->
-    @languageRegistrySubscrs.dispose()
+  unsubscribeFromLanguageManager: ->
+    @languageManagerSubscrs.dispose()
 
   handleDidRemoveLanguages: (removedLanguages) ->
 
   ## Command handlers ----------------------------------------------------------
 
-  doInstallLanguages: (event) =>
-    atom.pickFolder (paths) ->
-      languageInstaller.installLanguages(paths) if paths?
-
-  doUninstallLanguages: (event) =>
-    languageInstaller.uninstallLanguages([])
+  doToggleLanguageManager: (event) =>
+    @languageManagerView.toggle()
 
   doToggleLevelSelect: (event) =>
     if workspace.isActive()
@@ -204,10 +204,13 @@ class WorkspaceManager
       event.abortKeyBinding()
 
   doToggleTerminal: (event) =>
-    if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
+    if workspace.isActive()
+      activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
+      activeTextEditor = activeLevelCodeEditor.getTextEditor()
       activeTerminal = activeLevelCodeEditor.getTerminal()
       if activeTerminal.isVisible()
         activeTerminal.hide()
+        atom.views.getView(activeTextEditor).focus()
       else
         activeTerminal.show()
         activeTerminal.focus()
@@ -215,33 +218,49 @@ class WorkspaceManager
       event.abortKeyBinding()
 
   doIncreaseTerminalFontSize: (event) =>
-    if (activeTerminal = workspace.getActiveTerminal())?
-      activeTerminal.increaseFontSize()
+    if workspace.isActive()
+      workspace.getActiveTerminal().increaseFontSize()
     else
       event.abortKeyBinding()
 
   doDecreaseTerminalFontSize: (event) =>
-    if (activeTerminal = workspace.getActiveTerminal())?
-      activeTerminal.decreaseFontSize()
+    if workspace.isActive()
+      workspace.getActiveTerminal().decreaseFontSize()
+    else
+      event.abortKeyBinding()
+
+  doToggleTerminalFocus: (event) =>
+    if workspace.isActive()
+      activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
+      activeTextEditor = activeLevelCodeEditor.getTextEditor()
+      activeTerminal = activeLevelCodeEditor.getTerminal()
+      if activeTerminal.hasFocus()
+        atom.views.getView(activeTextEditor).focus()
+      else
+        activeTerminal.show()
+        activeTerminal.focus()
     else
       event.abortKeyBinding()
 
   doScrollTerminalToTop: (event) =>
-    if (activeTerminal = workspace.getActiveTerminal())?
-      activeTerminal.scrollToTop()
+    if workspace.isActive()
+      workspace.getActiveTerminal().scrollToTop()
     else
       event.abortKeyBinding()
 
   doScrollTerminalToBottom: (event) =>
-    if (activeTerminal = workspace.getActiveTerminal())?
-      activeTerminal.scrollToBottom()
+    if workspace.isActive()
+      workspace.getActiveTerminal().scrollToBottom()
     else
       event.abortKeyBinding()
 
   doStartExecution: (event) =>
-    if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
-      # TODO catch errors
+    if workspace.isActive()
       try
+        activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
+        activeTerminal = activeLevelCodeEditor.getTerminal()
+        activeTerminal.show()
+        activeTerminal.focus()
         activeLevelCodeEditor.startExecution()
       catch error
         notificationUtils.addError "Och neeee do: #{error}",
@@ -250,8 +269,8 @@ class WorkspaceManager
       event.abortKeyBinding()
 
   doStopExecution: (event) =>
-    if (activeLevelCodeEditor = workspace.getActiveLevelCodeEditor())?
-      activeLevelCodeEditor.stopExecution()
+    if workspace.isActive()
+      workspace.getActiveLevelCodeEditor().stopExecution()
     else
       event.abortKeyBinding()
 

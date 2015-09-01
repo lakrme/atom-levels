@@ -29,9 +29,6 @@ class Language
   getName: ->
     @properties.name
 
-  getDirectoryPath: ->
-    @properties.dirPath
-
   getDefaultGrammar: ->
     @properties.defaultGrammar
 
@@ -46,6 +43,9 @@ class Language
 
   getLineCommentPattern: ->
     @properties.lineCommentPattern
+
+  getExecutablePath: ->
+    @properties.executablePath
 
   getExecutionMode: ->
     if @properties.executionMode?
@@ -70,6 +70,9 @@ class Language
 
   getLastActiveLevel: ->
     @properties.lastActiveLevel
+
+  getConfigurationFilePath: ->
+    @properties.configFilePath
 
   ## Setting language properties -----------------------------------------------
 

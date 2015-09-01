@@ -18,32 +18,41 @@ class TerminalPanelView extends View
         @div class: 'control-bar-left', =>
 
           @div class: 'control-group', =>
-            @a href: '#', click: 'doShowTerminal', \
-                outlet: 'showTerminalLink', =>
-              @span class: 'icon icon-triangle-up', =>
-                @text 'Show Terminal'
-            @a href: '#', click: 'doHideTerminal', \
-                outlet: 'hideTerminalLink', =>
-              @span class: 'icon icon-triangle-down', =>
-                @text 'Hide Terminal'
-
-          @div class: 'control-bar-separator', outlet: 'separatorLeft'
+            @div class: 'control-element', =>
+              @a href: '#', click: 'doShowTerminal', \
+                  outlet: 'showTerminalLink', =>
+                @span class: 'icon icon-triangle-up', =>
+                  @text 'Show Terminal'
+            @div class: 'control-element', =>
+              @a href: '#', click: 'doHideTerminal', \
+                  outlet: 'hideTerminalLink', =>
+                @span class: 'icon icon-triangle-down', =>
+                  @text 'Hide Terminal'
 
           @div class: 'control-group terminal-controls', \
-               outlet: 'terminalControls', =>
-            @a href: '#', click: 'doClearTerminal', =>
-              @span class: 'icon icon-x', =>
-                @text 'Clear'
-            @a href: '#', click: 'doScrollTerminalToTop', =>
-              @span class: 'icon icon-move-up', =>
-                @text 'To Top'
-            @a href: '#', click: 'doScrollTerminalToBottom', =>
-              @span class: 'icon icon-move-down', =>
-                @text 'To Bottom'
-            # @a href: '#', click: 'doIncreaseTerminalFontSize', =>
-            #   @span class: 'icon icon-diff-added'
-            # @a href: '#', click: 'doDecreaseTerminalFontSize', =>
-            #   @span class: 'icon icon-diff-removed'
+              outlet: 'terminalControls', =>
+
+            @div class: 'control-bar-separator'
+
+            @div class: 'control-element', =>
+              @a href: '#', click: 'doClearTerminal', =>
+                @span class: 'icon icon-x', =>
+                  @text 'Clear'
+            @div class: 'control-element', =>
+              @a href: '#', click: 'doScrollTerminalToTop', =>
+                @span class: 'icon icon-move-up', =>
+                  @text 'Scroll To Top'
+            @div class: 'control-element', =>
+              @a href: '#', click: 'doScrollTerminalToBottom', =>
+                @span class: 'icon icon-move-down', =>
+                  @text 'Scroll To Bottom'
+
+            @div class: 'control-bar-separator'
+
+            @div class: 'control-element', =>
+              @span class: 'icon icon-mention', =>
+                @text 'Font Size:'
+              @select class: 'font-size-select', outlet: 'fontSizeSelect'
 
         @div class: 'control-bar-right', =>
 
@@ -60,13 +69,6 @@ class TerminalPanelView extends View
             @span class: 'text-subtle', \
                 outlet: 'noExecutionModeAvailableInfo', =>
               @text '(no execution mode available)'
-
-          @div class: 'control-bar-separator', outlet: 'separatorRight'
-
-          @div class: 'control-group', =>
-            @a href: '#', click: 'test', =>
-              @span class: 'icon icon-gear', =>
-                @text 'Language Configuration'
 
       @div class: 'terminal-container', outlet: 'terminalContainer'
       @div class: 'terminal-info', outlet: 'terminalInfo'
@@ -89,6 +91,7 @@ class TerminalPanelView extends View
 
   destroy: ->
     @workspaceSubscrs.dispose()
+    @hide()
 
   ## Resizing the terminal panel -----------------------------------------------
 
@@ -117,10 +120,12 @@ class TerminalPanelView extends View
   ## Handling view events ------------------------------------------------------
 
   doShowTerminal: ->
-    @activeTerminal.show()
+    workspaceView = atom.views.getView(atom.workspace)
+    atom.commands.dispatch(workspaceView,'levels:toggle-terminal')
 
   doHideTerminal: ->
-    @activeTerminal.hide()
+    workspaceView = atom.views.getView(atom.workspace)
+    atom.commands.dispatch(workspaceView,'levels:toggle-terminal')
 
   doClearTerminal: ->
     @activeTerminal.clear()
@@ -131,12 +136,6 @@ class TerminalPanelView extends View
   doScrollTerminalToBottom: ->
     @activeTerminal.scrollToBottom()
 
-  doIncreaseTerminalFontSize: ->
-    @activeTerminal.increaseFontSize()
-
-  doDecreaseTerminalFontSize: ->
-    @activeTerminal.decreaseFontSize()
-
   doStartExecution: ->
     workspaceView = atom.views.getView(atom.workspace)
     atom.commands.dispatch(workspaceView,'levels:start-execution')
@@ -145,10 +144,16 @@ class TerminalPanelView extends View
     workspaceView = atom.views.getView(atom.workspace)
     atom.commands.dispatch(workspaceView,'levels:stop-execution')
 
-  test: ->
-    @activeTerminal.writeSuccess
-      head: "hallo"
-      body: "tschüß"
+  doSetCursorToExecutionIssuePorsition: (element) ->
+    id = element.getAttribute('data-id')
+    row = parseInt(element.getAttribute('data-row')) - 1
+    col = parseInt(element.getAttribute('data-col') ? 0) - 1
+    levelCodeEditor = workspace.getActiveLevelCodeEditor()
+    if levelCodeEditor.getCurrentExecutionIssueById(id)
+      textEditor = levelCodeEditor.getTextEditor()
+      pos = textEditor.clipBufferPosition([row,col])
+      atom.views.getView(textEditor).focus()
+      textEditor.setCursorBufferPosition(pos)
 
   ## Updating the terminal panel's state ---------------------------------------
 
@@ -159,18 +164,13 @@ class TerminalPanelView extends View
     @updateOnDidChangeActiveLanguageOfWorkspace(@activeLanguage)
     @updateOnDidChangeActiveTerminalOfWorkspace(@activeTerminal)
 
-    # set up window event handlers
-    @on 'mousedown', '.resize-handle', => @resizeStarted()
-    @on 'dblclick', '.resize-handle', => @resizeToMinSize()
-
   updateOnDidExitWorkspace: ->
     @hide()
     @activeTerminalSubscrs.dispose()
     @activeLanguageSubscrs.dispose()
     @activeTerminal = null
     @activeLanguage = null
-
-    # remove event handlers
+    @fontSizeSelect.off()
     @off()
 
   updateOnDidChangeActiveLanguageOfWorkspace: (@activeLanguage) ->
@@ -185,14 +185,12 @@ class TerminalPanelView extends View
     @activeTerminalSubscrs.add @activeTerminal.observeIsVisible \
       (isVisible) =>
         @updateOnDidChangeIsVisibleOfActiveTerminal(isVisible)
-    # @activeTerminalSubscrs.add @activeTerminal.onDidChangeSize \
-    #   (size) => @updateOnDidChangePropertyOfActiveTerminal
-    #     name: 'Size'
-    #     value: size
-    # @activeTerminalSubscrs.add @activeTerminal.onDidChangeFontSize \
-    #   (fontSize) => @updateOnDidChangePropertyOfActiveTerminal
-    #     name: 'Font size'
-    #     value: fontSize
+    @activeTerminalSubscrs.add @activeTerminal.onDidChangeSize \
+      (size) =>
+        @updateOnDidChangeTerminalSize(size)
+    @activeTerminalSubscrs.add @activeTerminal.observeFontSize \
+      (fontSize) =>
+        @updateOnDidChangeTerminalFontSize(fontSize)
     @activeTerminalSubscrs.add @activeTerminal.observeIsExecuting \
       (isExecuting) =>
         @updateOnDidChangeIsExecutingOfActiveTerminal(isExecuting)
@@ -214,25 +212,63 @@ class TerminalPanelView extends View
 
   updateOnDidChangeIsVisibleOfActiveTerminal: (isVisible) ->
     if isVisible
-      # update control bar element
+      # update control bar elements
       @resizeHandle.show()
       @showTerminalLink.hide()
       @hideTerminalLink.show()
-      @separatorLeft.css('display','inline')
       @terminalControls.css('display','inline')
-      # add terminal event handlers
-      @off('keydown')
+      # set up font size select handler
+      @fontSizeSelect.off()
+      @fontSizeSelect.change =>
+        fontSize = parseInt(@fontSizeSelect.val())
+        @activeTerminal.setFontSize(fontSize)
+      # set up event handlers
+      @off()
+      @on 'mousedown', '.resize-handle', =>
+        @resizeStarted()
+      @on 'dblclick', '.resize-handle', =>
+        @resizeToMinSize()
       @on 'keydown', (event) =>
         terminalUtils.dispatchKeyEvent(@activeTerminal,event)
+      @on 'click', '.warning-link', (event) =>
+        @doSetCursorToExecutionIssuePorsition(event.target)
+      @on 'click', '.error-link', (event) =>
+        @doSetCursorToExecutionIssuePorsition(event.target)
+      @on 'focusin', =>
+        @activeTerminal.didFocus()
+      @on 'focusout', =>
+        @activeTerminal.didBlur()
     else
       # update control bar elements
       @resizeHandle.hide()
       @showTerminalLink.show()
       @hideTerminalLink.hide()
-      @separatorLeft.hide()
       @terminalControls.hide()
-      # remove terminal event handlers
-      @off('keydown')
+      # remove font size selector handler
+      @fontSizeSelect.off()
+      # remove event handlers
+      @off()
+
+  updateOnDidChangeTerminalSize: (size) ->
+    @terminalInfo.empty()
+    @terminalInfo.append("Lines: #{size}")
+    if @terminalInfo.is(':visible')
+      @terminalInfo.stop(true)
+      @terminalInfo.css('opacity',100)
+    else
+      @terminalInfo.show()
+    @terminalInfo.fadeOut(1400)
+
+  updateOnDidChangeTerminalFontSize: (currentFontSize) ->
+    @fontSizeSelect.empty()
+    minFontSize = terminalUtils.MIN_FONT_SIZE
+    maxFontSize = terminalUtils.MAX_FONT_SIZE
+    for fontSize in [minFontSize..maxFontSize]
+      optionHtml = "<option value=\"#{fontSize}\""
+      optionHtml += ' selected' if fontSize is currentFontSize
+      optionHtml += ">#{fontSize}</option>"
+      option = $(optionHtml)
+      @fontSizeSelect.append(option)
 
   updateOnDidChangeIsExecutingOfActiveTerminal: (isExecuting) ->
     if isExecuting
@@ -247,16 +283,6 @@ class TerminalPanelView extends View
       else
         @startExecutionLink.hide()
         @noExecutionModeAvailableInfo.show()
-
-  # updateOnDidChangePropertyOfActiveTerminal: ({name,value}) ->
-  #   @terminalInfo.empty()
-  #   @terminalInfo.append("#{name}: #{value}")
-  #   if @terminalInfo.is(':visible')
-  #     @terminalInfo.stop(true)
-  #     @terminalInfo.css('opacity',100)
-  #   else
-  #     @terminalInfo.show()
-  #   @terminalInfo.fadeOut(1000)
 
   ## Showing and hiding the terminal panel -------------------------------------
 

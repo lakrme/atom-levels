@@ -5,12 +5,8 @@
       'label': 'Levels'
       'submenu': [
         {
-          'label': 'Install Language(s)...'
-          'command': 'levels:install-languages'
-        },
-        {
-          'label': 'Uninstall Language(s)'
-          'command': 'levels:uninstall-languages'
+          'label': 'Toggle Language Manager'
+          'command': 'levels:toggle-language-manager'
         }
       ]
     ]

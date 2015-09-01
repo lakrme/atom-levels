@@ -7,9 +7,9 @@ module.exports =
   DEFAULT_IS_VISIBLE: true
   DEFAULT_SIZE: 20
   MIN_SIZE: 15
-  DEFAULT_FONT_SIZE: 13
-  MIN_FONT_SIZE: 11
-  MAX_FONT_SIZE: 18
+  DEFAULT_FONT_SIZE: 12
+  MIN_FONT_SIZE: 10
+  MAX_FONT_SIZE: 20
   TOPKEK:
     """
      _              _        _

@@ -1,4 +1,4 @@
-languageRegistry  = require('./language-registry').getInstance()
+languageManager   = require('./language-manager').getInstance()
 workspaceManager  = require('./workspace-manager').getInstance()
 
 notificationUtils = require('./notification-utils')
@@ -71,7 +71,7 @@ module.exports =
       default: notificationUtils.DEFAULT_SHOW_ALL_ERRORS
 
   activate: (state) ->
-    languageRegistry.loadInstalledLanguages()
+    languageManager.loadInstalledLanguages()
 
     workspaceManager.setUpWorkspace(state)
     workspaceManager.activateEventHandlers()
