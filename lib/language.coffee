@@ -29,6 +29,9 @@ class Language
   getName: ->
     @properties.name
 
+  getLastActiveLevel: ->
+    @properties.lastActiveLevel
+
   getDefaultGrammar: ->
     @properties.defaultGrammar
 
@@ -68,8 +71,8 @@ class Language
   getExecutionCommandPattern: ->
     @properties.executionCmdPattern
 
-  getLastActiveLevel: ->
-    @properties.lastActiveLevel
+  getInstallationDate: ->
+    @properties.installationDate
 
   getConfigurationFilePath: ->
     @properties.configFilePath

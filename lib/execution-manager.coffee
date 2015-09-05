@@ -36,7 +36,7 @@ class ExecutionManager
         message: ''
     unless (filePath = @textEditor.getPath())?
       throw new Error
-        name: 'ExecutionError'
+        name: ''
         message: ''
 
     @terminal.writeLn('Running level code...')
@@ -61,26 +61,25 @@ class ExecutionManager
     @terminalSubscr = @terminal.onDidEnterInput (input) =>
       @process.stdin.write("#{input}\n")
     @process.on 'close', =>
-      @didStopExecution()
-    @didStartExecution()
+      @process.stdin.end()
+      @process = null
+      @terminalSubscr.dispose()
+      @terminalSubscr = null
+      @terminal.exitScope()
+      @terminal.didStopExecution()
+      @levelCodeEditor.didStopExecution()
 
-  didStartExecution: ->
+    # notify terminal and level code editor
     @terminal.enterScope()
     @terminal.didStartExecution()
     @levelCodeEditor.didStartExecution()
 
   stopExecution: ->
     if @isExecuting()
-      # TODO stop execution
-      @didStopExecution()
-
-  didStopExecution: ->
-    @process.stdin.end()
-    @process = null
-    @terminalSubscr.dispose()
-    @terminalSubscr = null
-    @terminal.exitScope()
-    @terminal.didStopExecution()
-    @levelCodeEditor.didStopExecution()
+      # FIXME on OS X this only kills the sh root process but not the child
+      # processes (primarily the run process); therefore the close event will
+      # not be emitted until the run process is killed manually
+      @process.kill()
+      # ---------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------

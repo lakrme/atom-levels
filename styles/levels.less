@@ -1,73 +1,63 @@
 @import "ui-variables";
+@import "levels-ui-variables";
 
 .levels-view {
 
   &.language-manager {
-
-    .close-button {
+    .overlay-hack {
+      display: none;
+      height: 100%;
+      left: 0;
       position: absolute;
-      right: @component-padding;
-      top: @component-padding+@component-padding/2;
-      &.icon::before {margin-right: 0;}
+      top: 0;
+      width: 100%;
+      z-index: 2;
     }
 
-    .head {
-      .heading>h1 {
-        color: @text-color-highlight;
-        font-weight: bold;
-        font-size: 18px;
-        margin: @component-padding/2 0 @component-padding 0;
+    .language-list {
+      >.head {
+        background-color: @language-manager-background;
+        margin-bottom: @component-padding;
+        padding: @component-padding;
+        h1 {
+          font-size: 16px;
+          margin-bottom: @component-padding;
+        }
+        atom-text-editor {
+          margin: 0;
+          &.is-focused {background-color: @input-background-color;}
+        }
       }
-      .subheading>h2 {
-        font-size: 16px;
-        margin: 0 0 @component-padding 0;
-      }
-    }
 
-    .body {
-      background-color: @base-background-color;
-      border-radius: @component-border-radius;
-      height: 400px;
-      overflow: scroll;
-      padding: @component-padding;
-
-      .language-list {
+      >.body {
+        height: (@language-card-height * 5) + 5px;
+        margin-bottom: @component-padding - 1px;
+        overflow-y: scroll;
         .language-card {
-          background-color: lighten(@tool-panel-background-color,7%);
-          border: 1px solid @base-border-color;
-          border-radius: 2*@component-border-radius;
-          font-weight: 300;
-          margin-bottom: @component-padding/2;
+          background-color: @language-manager-background;
+          height: @language-card-height;
+          margin-bottom: 1px;
           padding: @component-padding;
-          .card-name {
-            color: @text-color-highlight;
-            font-size: 12px;
+          &:hover {
+            background-color: lighten(@overlay-background-color,5%);
           }
-          .controls {
-            padding-top: 5px;
-            .btn-group {
-              button {
-                font-size: 11px;
-                padding: 3px 6px;
-              }
-            }
+          >.controls {
+            height: 100%;
+            padding-top: 2.5px;
           }
-        }
-        .language-card:hover {
-          background-color: lighten(@tool-panel-background-color,9%);
+          .language-name {
+              color: @text-color-highlight;
+              font-size: 12px;
+              margin-right: 5px;
+          }
         }
       }
-    }
 
-    .control-bar {
-      padding: @component-padding 0 0 0;
-      .control-bar-left {
-        display: inline;
-        width: 50%;
-      }
-      .control-bar-right {
-        display: inline;
-        float: right;
+      >.controls {
+        background-color: lighten(@overlay-background-color,3%);
+        margin-top: @component-padding;
+        overflow: auto;
+        padding: @component-padding;
       }
     }
   }
@@ -102,12 +92,10 @@
     .control-bar {
       height: 26px;
       padding: 5px 12.5px;
-
       a, a:focus, a:hover {
         color: @text-color;
         outline: 0;
       }
-
       .control-bar-left {
         display: inline;
         overflow-x: scroll;
@@ -115,7 +103,6 @@
         .control-element {padding-right: 10px;}
         .control-bar-separator {margin-right: 10px;}
       }
-
       .control-bar-right {
         display: inline;
         overflow-x: scroll;
@@ -123,7 +110,6 @@
         a {margin-left: 10px;}
         .control-bar-separator {margin-left: 10px;}
       }
-
       .control-group {
         display: inline;
 
@@ -131,7 +117,6 @@
           a {text-decoration: none;}
         }
       }
-
       .control-element {
         display: inline;
         select {
@@ -145,12 +130,10 @@
           &:hover {text-decoration: underline;}
         }
       }
-
       .control-bar-separator {
         border-left: 1px solid @text-color-subtle;
         display: inline;
       }
-
       .icon::before {
         font-size: 14px;
         height: 14px;
@@ -162,26 +145,21 @@
     .terminal-container {
       background-color: #000;
       padding: 0 12.5px 0 12.5px;
-
       .terminal {
         color: #fff;
         font-family: Courier;
         overflow: scroll;
         position: relative;
-
         .cursor {
           background-color: #fff;
           position: absolute;
         }
-
         .line {
           white-space: pre;
-
           a {
             &.warning-link {color: @text-color-warning;}
             &.error-link {color: @text-color-error;}
           }
-
           .text-subtle,
           .text-error  {
             font-weight: bold;
@@ -202,6 +180,45 @@
       padding: 4px 12.5px;
       position: absolute;
       right: 10px;
+    }
+  }
+
+  &.progress-panel {
+    background-color: @overlay-background-color;
+    border: 1px solid @overlay-border-color;
+    border-radius: @component-border-radius;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    display: none;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    padding: @component-padding * 2;
+    position: absolute;
+    right: 0;
+    width: 300px;
+    z-index: 3;
+    .headline {
+      color: @text-color-highlight;
+    }
+    progress {
+      margin: 2px 0;
+      width: 100%;
+    }
+    .issue-log-container {
+      border-top: 1px solid @overlay-border-color;
+      margin-top: @component-padding / 2;
+      padding: (@component-padding / 2) 0;
+      .issue-count {
+        margin-bottom: 2px;
+      }
+      .issue-log {
+        height: 60px;
+        overflow-y: scroll;
+        span {display: block;}
+      }
+    }
+    .controls {
+      overflow: auto;
     }
   }
 }

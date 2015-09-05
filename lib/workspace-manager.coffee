@@ -263,7 +263,14 @@ class WorkspaceManager
         activeTerminal.focus()
         activeLevelCodeEditor.startExecution()
       catch error
-        notificationUtils.addError "Och neeee do: #{error}",
+        switch error.name
+          when 'ExecutionError'
+            notificationUtils.addError 'jklklsj',
+              head: 'Levels: Execution '
+              important: true
+          else throw error
+
+        notificationUtils.addError "Och neeee do: #{error.mes}",
           important: true
     else
       event.abortKeyBinding()

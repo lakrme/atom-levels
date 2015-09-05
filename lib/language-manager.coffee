@@ -1,4 +1,5 @@
 {Emitter}     = require('atom')
+dialog        = require('remote').require('dialog')
 fs            = require('fs-plus')
 path          = require('path')
 CSON          = require('season')
@@ -19,11 +20,12 @@ class LanguageManager
     @languagesDirPath = path.join(path.dirname(__dirname),'languages')
     @languagesByName = {}
     @installing = false
+    @uninstallung = false
 
   loadInstalledLanguages: ->
     for dirName in fs.readdirSync(@languagesDirPath)
       dirPath = path.join(@languagesDirPath,dirName)
-      if fs.statSync(dirPath).isDirectory(dirPath)
+      if fs.statSync(dirPath).isDirectory()
         @loadLanguage(path.join(dirPath,'config.json'))
     undefined
 
@@ -48,11 +50,20 @@ class LanguageManager
   onDidStopInstalling: (callback) ->
     @emitter.on('did-stop-installing',callback)
 
-  # onDidBeginInstallationStep: (callback) ->
-  #   @emitter.on('did-begin-installation-phase',callback)
-  #
-  # onDidEndInstallationStep: (callback) ->
-  #   @emitter.on('did-end-installation-phase',callback)
+  onDidBeginInstallationStep: (callback) ->
+    @emitter.on('did-begin-installation-step',callback)
+
+  onDidGenerateInstallationWarning: (callback) ->
+    @emitter.on('did-generate-installation-warning',callback)
+
+  onDidGenerateInstallationError: (callback) ->
+    @emitter.on('did-generate-installation-error',callback)
+
+  onDidStartUninstalling: (callback) ->
+    @emitter.on('did-start-uninstalling',callback)
+
+  onDidStopUninstalling: (callback) ->
+    @emitter.on('did-stop-uninstalling',callback)
 
   ## Adding languages ----------------------------------------------------------
 
@@ -133,6 +144,7 @@ class LanguageManager
     properties.interpreterCmdPattern = config.interpreterCmdPattern
     properties.compilerCmdPattern = config.compilerCmdPattern
     properties.executionCmdPattern = config.executionCmdPattern
+    properties.installationDate = new Date(Date.parse(config.installationDate))
 
     # set configuration file path
     properties.configFilePath = configFilePath
@@ -234,23 +246,41 @@ class LanguageManager
   installLanguage: (configFilePath) ->
     @installing = true
     @emitter.emit('did-start-installing')
+
+    # step 1 (validating configuration file)
+    @beginInstallationStep
+      message: 'Validating configuration file...'
+      progress: 0
     @validateConfigurationFile(configFilePath)
 
     configDirPath = path.dirname(configFilePath)
     config = CSON.readFileSync(configFilePath)
-
     grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
     grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
+
+    # step 2 (creating language directory)
+    @beginInstallationStep
+      message: 'Creating language directory...'
+      progress: 13
     languageNameFormatted = config.name.replace(/\s+/g,'-').toLowerCase()
     languageDirPath = path.join(@languagesDirPath,languageNameFormatted)
     languageGrammarsDirPath = path.join(languageDirPath,'grammars')
-    fs.mkdirSync(languageDirPath)
-    fs.mkdirSync(languageGrammarsDirPath)
+    try
+      fs.mkdirSync(languageDirPath)
+      fs.mkdirSync(languageGrammarsDirPath)
+    catch error
+      @emitter.emit('did-generate-installation-error',{message: "Could not create language directory due to the following error: #{error}"})
+      @emitter.emit('did-stop-installing',{success: false})
+      return
 
     configCopy = {}
     configCopy.name = config.name
     configCopy.scopeName = "levels.source.#{languageNameFormatted}"
 
+    # step 3 (writing language levels)
+    @beginInstallationStep
+      message: 'Writing language levels...'
+      progress: 26
     configCopy.levels = []
     for levelConfig in config.levels
       levelConfigCopy = {}
@@ -272,6 +302,10 @@ class LanguageManager
         CSON.writeFileSync(grammarCopyPath,grammarCopy)
       configCopy.levels.push(levelConfigCopy)
 
+    # step 4 (writing default grammar)
+    @beginInstallationStep
+      message: 'Writing default grammar...'
+      progress: 39
     if (defaultGrammarPath = config.defaultGrammar)?
       configCopy.defaultGrammar = 'grammars/default.cson'
       # write default grammar to directory
@@ -291,6 +325,10 @@ class LanguageManager
     configCopy.objectCodeFileType = config.objectCodeFileType
     configCopy.lineCommentPattern = config.lineCommentPattern
 
+    # step 5 (copying executable)
+    @beginInstallationStep
+      message: 'Copying executable...'
+      progress: 52
     configCopy.executable = 'run'
     configCopy.executable += '.exe' if process.platform is 'win32'
     executablePath = config.executable
@@ -303,30 +341,77 @@ class LanguageManager
     writeStream.on 'finish', =>
       fs.chmodSync(executableCopyPath,'755')
 
-    configCopy.interpreterCmdPattern = config.interpreterCmdPattern
-    configCopy.compilerCmdPattern = config.compilerCmdPattern
-    configCopy.executionCmdPattern = config.executionCmdPattern
+      configCopy.interpreterCmdPattern = config.interpreterCmdPattern
+      configCopy.compilerCmdPattern = config.compilerCmdPattern
+      configCopy.executionCmdPattern = config.executionCmdPattern
+      configCopy.installationDate = new Date()
 
-    configCopyFilePath = path.join(languageDirPath,'config.json')
-    CSON.writeFileSync(configCopyFilePath,configCopy)
+      # step 6 (writing configuration file)
+      @beginInstallationStep
+        message: 'Writing configuration file...'
+        progress: 65
+      configCopyFilePath = path.join(languageDirPath,'config.json')
+      CSON.writeFileSync(configCopyFilePath,configCopy)
 
-    # write dummy grammar
-    dummyGrammar =
-      name: grammarName
-      scopeName: configCopy.scopeName
-      fileTypes: configCopy.levelCodeFileTypes
+      # step 7 (writing dummy grammar)
+      @beginInstallationStep
+        message: 'Writing dummy grammar...'
+        progress: 78
+      dummyGrammar =
+        name: grammarName
+        scopeName: configCopy.scopeName
+        fileTypes: configCopy.levelCodeFileTypes
+      grammarsDirPath = path.join(path.dirname(__dirname),'grammars')
+      dummyGrammarPath = \
+        path.join(grammarsDirPath,"#{languageNameFormatted}.cson")
+      CSON.writeFileSync(dummyGrammarPath,dummyGrammar)
+
+      # step 8 (loading language to registry)
+      @beginInstallationStep
+        message: 'Loading language registry...'
+        progress: 91
+      language = @loadLanguage(configCopyFilePath)
+      atom.grammars.loadGrammarSync(dummyGrammarPath)
+
+      @installing = false
+      @emitter.emit('did-stop-installing',{language,success: true})
+
+  beginInstallationStep: (step) ->
+    @emitter.emit('did-begin-installation-step',step)
+
+  isUninstalling: ->
+    @uninstalling
+
+  uninstallLanguage: (language) ->
+    @uninstalling = true
+    @emitter.emit('did-start-uninstalling',language)
+
+    # remove dummy grammar
+    atom.grammars.removeGrammarForScopeName(language.getScopeName())
+    languageName = language.getName()
+    languageNameFormatted = languageName.replace(/\s+/g,'-').toLowerCase()
     grammarsDirPath = path.join(path.dirname(__dirname),'grammars')
     dummyGrammarPath = \
       path.join(grammarsDirPath,"#{languageNameFormatted}.cson")
-    CSON.writeFileSync(dummyGrammarPath,dummyGrammar)
+    fs.unlinkSync(dummyGrammarPath)
 
-    @loadLanguage(configCopyFilePath)
-    atom.grammars.loadGrammarSync(dummyGrammarPath)
+    # remove language directory recursively
+    languageDirPath = path.join(@languagesDirPath,languageNameFormatted)
+    rmdirRecursively = (dirPath) ->
+      for filename in fs.readdirSync(dirPath)
+        filePath = path.join(dirPath,filename)
+        if fs.statSync(filePath).isDirectory()
+          rmdirRecursively(filePath)
+        else
+          fs.unlinkSync(filePath)
+      fs.rmdirSync(dirPath)
+    rmdirRecursively(languageDirPath)
 
-    @installing = false
-    @emitter.emit('did-stop-installing')
+    # remove the language from the registry
+    @removeLanguage(language)
 
-  uninstallLanguage: (language) ->
+    @uninstalling = false
+    @emitter.emit('did-stop-uninstalling',{language,success: true})
 
   ## Validation ----------------------------------------------------------------
 
