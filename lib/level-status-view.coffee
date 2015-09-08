@@ -28,6 +28,8 @@ class LevelStatusView extends View
     @workspaceSubscrs.add workspace.onDidChangeActiveLevel \
       (activeLevel) =>
         @updateOnDidChangeActiveLevelOfWorkspace(activeLevel)
+    # initially hide the level status
+    @hide()
 
   destroy: ->
     @workspaceSubscrs.dispose()
