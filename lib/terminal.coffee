@@ -252,6 +252,8 @@ class Terminal
   ## Writing typed messages to the terminal ------------------------------------
 
   writeTypedMessage: ({type,head,body,data}={}) ->
+    headElem = ''
+    bodyElem = ''
     if head or body
       startTag  = "<message type=\"#{type}\""
       startTag += " data-#{key}=\"#{value}\""  for key,value of data
@@ -281,6 +283,19 @@ class Terminal
 
   updateTypedMessageBufferOnDidCreateNewLine: ->
     if @typedMessageBuffer?
+      unless @typedMessageCurrentLineBuffer.match(/^<message\s+.*type=.*>$/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<head>$/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<\/head>$/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<body>$/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<\/body>$/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<\/message>/)?
+        # escape special characters
+        @typedMessageCurrentLineBuffer = @typedMessageCurrentLineBuffer\
+          .replace(/&/g,'&amp;')
+          .replace(/"/g,'&quot;')
+          .replace(/'/g,'&apos;')
+          .replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;')
       @typedMessageBuffer += "#{@typedMessageCurrentLineBuffer}\n"
       if @typedMessageCurrentLineBuffer.match(/^<\/message>/)?
         typedMessage = @readTypedMessage(@typedMessageBuffer)
@@ -298,6 +313,8 @@ class Terminal
         @emitter.emit('did-start-reading-typed-message')
 
   readTypedMessage: (buffer) ->
+    console.log buffer
+
     typedMessageXml = $($.parseXML(buffer)).find('message')
     typedMessage = {id: @constructor.getTypedMessageId()}
 
