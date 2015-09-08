@@ -313,8 +313,6 @@ class Terminal
         @emitter.emit('did-start-reading-typed-message')
 
   readTypedMessage: (buffer) ->
-    console.log buffer
-
     typedMessageXml = $($.parseXML(buffer)).find('message')
     typedMessage = {id: @constructor.getTypedMessageId()}
 

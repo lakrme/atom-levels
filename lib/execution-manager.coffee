@@ -76,9 +76,9 @@ class ExecutionManager
 
   stopExecution: ->
     if @isExecuting()
-      # FIXME on OS X this only kills the sh root process but not the child
-      # processes (primarily the run process); therefore the close event will
-      # not be emitted until the run process is killed manually
+      # FIXME on OS X and Linux this only kills the sh root process but not the
+      # child processes (primarily the run process); therefore the close event
+      # will not be emitted until the run process is killed manually
       @process.kill()
       # ---------------------------------------------------------------------
 
