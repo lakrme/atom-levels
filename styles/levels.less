@@ -94,14 +94,12 @@
       }
       .control-bar-left {
         display: inline;
-        overflow-x: scroll;
         width: 50%;
         .control-element {padding-right: 10px;}
         .control-bar-separator {margin-right: 10px;}
       }
       .control-bar-right {
         display: inline;
-        overflow-x: scroll;
         float: right;
         a {margin-left: 10px;}
         .control-bar-separator {margin-left: 10px;}
@@ -140,14 +138,15 @@
 
     .terminal-container {
       background-color: #000;
-      padding: 0 12.5px 0 12.5px;
       .terminal {
         color: #fff;
         font-family: Courier;
-        overflow: scroll;
+        overflow: auto;
+        padding-left: 12.5px;
         position: relative;
         .cursor {
           background-color: #fff;
+          margin-left: 12.5px;
           position: absolute;
         }
         .line {
