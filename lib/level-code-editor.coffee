@@ -50,6 +50,7 @@ class LevelCodeEditor
       @readExecutionIssueFromTypedMessage(typedMessage)
 
   destroy: ->
+    @removeExecutionIssues()
     @terminalSubscrs.dispose()
     @bufferSubscr.dispose()
     @terminal.release()
