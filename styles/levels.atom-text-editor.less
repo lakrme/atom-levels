@@ -1,4 +1,5 @@
 @import "ui-variables";
+@import "levels-ui-variables";
 
 atom-text-editor::shadow {
 
@@ -8,11 +9,12 @@ atom-text-editor::shadow {
     }
     &.annotation-warning {
       color: @text-color-warning;
-      background-color: fade(@text-color-warning,25%);
+      background-color: @annotation-warning-background-color;
     }
     &.annotation-error {
       color: @text-color-error;
-      background-color: fade(@text-color-error,25%);
+      background-color: @annotation-error-background-color;
     }
   }
+
 }
