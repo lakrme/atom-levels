@@ -1,6 +1,7 @@
 {CompositeDisposable}      = require('atom')
 {$,$$,TextEditorView,View} = require('atom-space-pen-views')
 dialog                     = require('remote').require('dialog')
+moment                     = require('moment')
 
 languageUtils              = require('./language-utils')
 
@@ -13,15 +14,15 @@ class LanguageListView extends View
 
   @content: ->
     @div class: 'language-list', =>
-      @div class: 'head', outlet: 'head', =>
-        @h1 class: 'icon icon-list-unordered', =>
+      @div class: 'header', =>
+        @h1 class: 'heading icon icon-list-unordered', =>
           @text 'Installed Languages '
           @span class: 'badge badge-flexible', \
               outlet: 'languageCountBadge'
         @subview 'filterInput', new TextEditorView
           mini: true
           placeholderText: 'Filter languages by name'
-      @div class: 'body', outlet: 'body'
+      @div class: 'language-cards', outlet: 'languageCards'
       @div class: 'controls', =>
         @div class: 'block pull-right', =>
           @button class: 'inline-block btn', \
@@ -37,41 +38,42 @@ class LanguageListView extends View
 
   initialize: (@languageManagerView) ->
     # initialize view components
-    languages = languageManager.getLanguages()
-    languagesSortedByDate = languages.sort (a,b) =>
-      a = a.getInstallationDate()
-      b = b.getInstallationDate()
-      a.getTime() - b.getTime()
+    languages = languageManager.getLanguages().sort \
+      languageUtils.compareLanguageNames({order: 'ascending'})
     @languageCountBadge.append(languages.length)
     @languageCardsByLanguageName = {}
     for language in languages
-      @body.append(languageCard = @renderLanguageCard(language))
+      @languageCards.append(languageCard = @renderLanguageCard(language))
       @languageCardsByLanguageName[language.getName()] = languageCard
 
+    # set up event handlers
     @languageManagerSubscrs = new CompositeDisposable
     @languageManagerSubscrs.add languageManager.onDidAddLanguage \
       (language) => @updateOnDidAddLanguage(language)
     @languageManagerSubscrs.add languageManager.onDidRemoveLanguage \
       (language) => @updateOnDidRemoveLanguage(language)
 
+    # set up filter input text editor
     @filterInputTextEditor = @filterInput.getModel()
-    @filterInputTextEditor.onDidChange =>
+    @filterInputTextEditorSubscr = @filterInputTextEditor.onDidChange =>
       filter = @filterInputTextEditor.getText()
       @filterLanguagesCardsByName(filter)
 
   destroy: ->
+    @filterInputTextEditorSubscr.dispose()
     @languageManagerSubscrs.dispose()
     for languageName,languageCard of @languageCardsByLanguageName
       languageCard.configureButton.off('click')
       languageCard.uninstallButton.off('click')
 
-  ## Rendering view elements ---------------------------------------------------
+  ## Rendering view components -------------------------------------------------
 
   renderLanguageCard: (language) ->
     languageName = language.getName()
     levelCount = language.getLevels().length
     installDate = language.getInstallationDate()
-    installDateFormatted = languageUtils.formatInstallationDate(installDate)
+    installDateFormatted = installDate.format('dddd, D. MMMM YYYY')
+    isNew = moment().diff(installDate,'days') <= 2
 
     configureButton = $('<button>Configure</div>')
     configureButton.addClass('btn icon icon-gear')
@@ -94,6 +96,9 @@ class LanguageListView extends View
             @text "#{languageName}"
           @span class: 'level-count', =>
             @text "(#{levelCount} Levels)"
+          if isNew
+            @span class: 'newness-indicator highlight-success', =>
+              @text "New!"
         @div class: 'secondary-line', =>
           @span class: 'text-subtle', =>
             @text "Added on #{installDateFormatted}"
@@ -105,14 +110,25 @@ class LanguageListView extends View
   ## Updating view elements ----------------------------------------------------
 
   updateOnDidAddLanguage: (language) ->
+    languages = languageManager.getLanguages().sort \
+      languageUtils.compareLanguageNames({order: 'ascending'})
     @languageCountBadge.empty()
-    @languageCountBadge.append(languageManager.getLanguages().length)
+    @languageCountBadge.append(languages.length)
     languageCard = @renderLanguageCard(language)
     languageCard.hide()
-    @body.append(languageCard)
-    languageCard.fadeIn('slow')
+
+    # insert language card
+    languageIndex = languages.indexOf(language)
+    if languageIndex is 0
+      @languageCards.prepend(languageCard)
+    else
+      @languageCards.children().eq(languageIndex-1).after(languageCard)
+
     @languageCardsByLanguageName[language.getName()] = languageCard
-    @body.scrollTop(@body[0].scrollHeight)
+    # TODO scroll to correct position
+    @languageCards.scrollTop(@languageCards[0].scrollHeight)
+    # -------------------------------
+    languageCard.fadeIn('slow')
 
   updateOnDidRemoveLanguage: (language) ->
     @languageCountBadge.empty()
@@ -126,10 +142,7 @@ class LanguageListView extends View
   ## Handling view events ------------------------------------------------------
 
   handleDidClickConfigureButton: (language) ->
-    @languageManagerView.progressPanel.update
-      progress: 63
-      info: 'hey'
-    @languageManagerView.progressPanel.show()
+    # @languageManagerView.showLanguage
 
   handleDidClickUninstallButton: (language) ->
     atom.confirm

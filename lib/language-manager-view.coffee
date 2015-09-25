@@ -2,7 +2,7 @@
 {View}                = require('atom-space-pen-views')
 
 LanguageListView      = require('./language-list-view')
-# LanguageConfigView = require('./language-config-view')
+# LanguageConfigView    = require('./language-config-view')
 ProgressPanelView     = require('./progress-panel-view')
 
 # ------------------------------------------------------------------------------
@@ -57,6 +57,6 @@ class LanguageManagerView extends View
     @modalPanel = atom.workspace.addModalPanel(item: @)
     @languageListView.filterInput.focus()
 
-  showLanguageConfiguration: (language) ->
+  showLanguageConfig: (language) ->
 
 # ------------------------------------------------------------------------------

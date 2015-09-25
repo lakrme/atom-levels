@@ -1,6 +1,6 @@
 {Emitter}     = require('atom')
-dialog        = require('remote').require('dialog')
-fs            = require('fs-plus')
+fs            = require('fs')
+moment        = require('moment')
 path          = require('path')
 CSON          = require('season')
 
@@ -13,7 +13,7 @@ Level         = require('./level')
 
 class LanguageManager
 
-  ## Construction and initialization -------------------------------------------
+  ## Construction --------------------------------------------------------------
 
   constructor: ->
     @emitter = new Emitter
@@ -21,13 +21,6 @@ class LanguageManager
     @languagesByName = {}
     @installing = false
     @uninstallung = false
-
-  loadInstalledLanguages: ->
-    for dirName in fs.readdirSync(@languagesDirPath)
-      dirPath = path.join(@languagesDirPath,dirName)
-      if fs.statSync(dirPath).isDirectory()
-        @loadLanguage(path.join(dirPath,'config.json'))
-    undefined
 
   ## Event subscription --------------------------------------------------------
 
@@ -85,6 +78,13 @@ class LanguageManager
     @addLanguage(language)
     language
 
+  loadInstalledLanguages: ->
+    for dirName in fs.readdirSync(@languagesDirPath)
+      dirPath = path.join(@languagesDirPath,dirName)
+      if fs.statSync(dirPath).isDirectory()
+        @loadLanguage(path.join(dirPath,'config.json'))
+    undefined
+
   ## Removing languages --------------------------------------------------------
 
   removeLanguage: (language) ->
@@ -132,22 +132,20 @@ class LanguageManager
   readLanguageFromConfigurationFile: (configFilePath) ->
     configDirPath = path.dirname(configFilePath)
     config = CSON.readFileSync(configFilePath)
+    installationDateFormat = languageUtils.INSTALLATION_DATE_FORMAT
 
-    # adopt basic properties
-    properties = {}
-    properties.name = config.name
-    properties.scopeName = config.scopeName
-    properties.levelCodeFileTypes = config.levelCodeFileTypes
-    properties.objectCodeFileType = config.objectCodeFileType
-    properties.lineCommentPattern = config.lineCommentPattern
-    properties.executionMode = config.executionMode
-    properties.interpreterCmdPattern = config.interpreterCmdPattern
-    properties.compilerCmdPattern = config.compilerCmdPattern
-    properties.executionCmdPattern = config.executionCmdPattern
-    properties.installationDate = new Date(Date.parse(config.installationDate))
-
-    # set configuration file path
-    properties.configFilePath = configFilePath
+    properties =
+      name: config.name
+      scopeName: config.scopeName
+      levelCodeFileTypes: config.levelCodeFileTypes
+      objectCodeFileType: config.objectCodeFileType
+      lineCommentPattern: config.lineCommentPattern
+      executionMode: config.executionMode
+      interpreterCmdPattern: config.interpreterCmdPattern
+      compilerCmdPattern: config.compilerCmdPattern
+      executionCmdPattern: config.executionCmdPattern
+      installationDate: moment(config.installationDate,installationDateFormat)
+      configFilePath: configFilePath
 
     # set the default grammar
     if (defaultGrammarPath = config.defaultGrammar)?
@@ -165,14 +163,13 @@ class LanguageManager
     defaultGrammar.fileTypes = fileTypes if fileTypes?
     properties.defaultGrammar = defaultGrammar
 
-    # create the language levels
+    # create language levels
     levels = []
     for levelConfig,i in config.levels
-      levelProperties = {}
-      levelProperties.number = i
-      # adopt basic properties
-      levelProperties.name = levelConfig.name
-      levelProperties.description = levelConfig.description
+      levelProperties =
+        number: i
+        name: levelConfig.name
+        description: levelConfig.description
       # set level grammar
       grammar = null
       if (grammarPath = levelConfig.grammar)?
@@ -204,6 +201,8 @@ class LanguageManager
     defaultGrammarPath = language.getDefaultGrammar().path
     emptyGrammarPath = path.join(@languagesDirPath,'empty.cson')
     configDirPath = path.dirname(configFilePath)
+    installationDateFormat = languageUtils.INSTALLATION_DATE_FORMAT
+
     config = {}
     config.name = language.getName()
     config.levels =
@@ -228,7 +227,11 @@ class LanguageManager
     config.interpreterCmdPattern = language.getInterpreterCommandPattern()
     config.compilerCmdPattern = language.getCompilerCommandPattern()
     config.executionCmdPattern = language.getExecutionCommandPattern()
+    config.installationDate = language.getInstallationDate().format \
+      installationDateFormat
+
     CSON.writeFileSync(configFilePath,config)
+    undefined
 
   ## Handling language changes -------------------------------------------------
 
@@ -344,7 +347,7 @@ class LanguageManager
       configCopy.interpreterCmdPattern = config.interpreterCmdPattern
       configCopy.compilerCmdPattern = config.compilerCmdPattern
       configCopy.executionCmdPattern = config.executionCmdPattern
-      configCopy.installationDate = new Date()
+      configCopy.installationDate = moment().format(languageUtils.INSTALLATION_DATE_FORMAT)
 
       # step 6 (writing configuration file)
       @beginInstallationStep
