@@ -142,7 +142,7 @@ class TerminalView extends View
       startTag = ''
       endTag = ''
       if (row = typedMessage.data.row)?
-        col = typedMessage['data-col']
+        col = typedMessage.data.col
         startTag  = "<a class=\"#{type}-link\" href=\"#\""
         startTag += " data-id=\"#{id}\""
         startTag += " data-row=\"#{row}\""
