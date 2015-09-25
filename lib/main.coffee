@@ -16,8 +16,11 @@ module.exports =
     #   properties:
     # -----------------------------------------------------------------------
     whenToWriteFileHeader:
-      title: 'When To Write File Header'
-      description: 'This is a description.'
+      title: 'When To Write The Language Information File Header'
+      description:
+        "Determines when to write the language information file header which is
+        used to identify the language and the level of a file (note that writing
+        the file header after setting the level will modify the buffer)."
       type: 'string'
       default: 'before saving the buffer'
       enum: ['before saving the buffer','after setting the level']
@@ -27,19 +30,24 @@ module.exports =
     #   properties:
     # --------------
     defaultTerminalIsVisible:
-      title: 'Default Terminal Is Visible'
-      description: 'This is a description.'
+      title: 'Initially Hide The Terminal'
+      description:
+        "If enabled, level code editor terminals will initially be hidden."
       type: 'boolean'
-      default: terminalUtils.DEFAULT_IS_VISIBLE
+      default: not terminalUtils.DEFAULT_IS_VISIBLE
     defaultTerminalSize:
       title: 'Default Terminal Size'
-      description: 'This is a description.'
+      description:
+        "The default size (in visible lines) of newly spawned level code editor
+        terminals."
       type: 'integer'
       default: terminalUtils.DEFAULT_SIZE
       minimum: terminalUtils.MIN_SIZE
     defaultTerminalFontSize:
       title: 'Default Terminal Font Size'
-      description: 'This is a description.'
+      description:
+        "The default font size (in pixels) of newly spawned level code editor
+        terminals."
       type: 'integer'
       default: terminalUtils.DEFAULT_FONT_SIZE
       minimum: terminalUtils.MIN_FONT_SIZE
@@ -51,22 +59,27 @@ module.exports =
     # --------------
     showAllInfos:
       title: 'Show All Info Notifications'
-      description: 'This is a description.'
+      description: """
+        If disabled, only important info notifications will be displayed.
+      """
       type: 'boolean'
       default: notificationUtils.DEFAULT_SHOW_ALL_INFOS
     showAllSuccesses:
       title: 'Show All Success Notifications'
-      description: 'This is a description.'
+      description:
+        "If disabled, only important success notifications will be displayed."
       type: 'boolean'
       default: notificationUtils.DEFAULT_SHOW_ALL_SUCCESSES
     showAllWarnings:
       title: 'Show All Warning Notifications'
-      description: 'This is a description.'
+      description:
+        "If disabled, only important warning notifications will be displayed."
       type: 'boolean'
       default: notificationUtils.DEFAULT_SHOW_ALL_WARNINGS
     showAllErrors:
       title: 'Show All Error Notifications'
-      description: 'This is a description.'
+      description:
+        "If disabled, only important error notifications will be displayed."
       type: 'boolean'
       default: notificationUtils.DEFAULT_SHOW_ALL_ERRORS
 
