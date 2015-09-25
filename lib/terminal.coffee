@@ -142,7 +142,7 @@ class Terminal
     @buffer.onDidClear(callback)
 
   onDidStartReadingTypedMessage: (callback) ->
-     @emitter.on('did-start-reading-typed-message',callback)
+    @emitter.on('did-start-reading-typed-message',callback)
 
   onDidReadTypedMessage: (callback) ->
     @emitter.on('did-read-typed-message',callback)
@@ -197,7 +197,7 @@ class Terminal
     dummyElement.style.fontSize = "#{@fontSize}px"
     dummyElement.style.visibility = 'hidden'
     dummyElement.textContent = '_'
-    body = document.getElementsByTagName('body')[0];
+    body = document.getElementsByTagName('body')[0]
     body.appendChild(dummyElement)
     charWidth = dummyElement.offsetWidth
     body.removeChild(dummyElement)

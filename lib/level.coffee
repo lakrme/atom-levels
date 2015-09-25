@@ -12,7 +12,7 @@ class Level
 
   observe: (callback) ->
     callback()
-    @onDidChange((changes) => callback())
+    @onDidChange((changes) -> callback())
 
   onDidChange: (callback) ->
     @emitter.on('did-change',callback)

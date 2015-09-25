@@ -46,7 +46,6 @@ class WorkspaceManager
     @levelStatusView.destroy()
     @levelSelectView.destroy()
     @terminalPanelView.destroy()
-    @languageConfigView.destroy()
 
     # destroy status bar tiles
     @levelStatusTile.destroy()
@@ -203,7 +202,7 @@ class WorkspaceManager
     else
       event.abortKeyBinding()
 
-  doToggleTerminal: (event) =>
+  doToggleTerminal: (event) ->
     if workspace.isActive()
       activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
       activeTextEditor = activeLevelCodeEditor.getTextEditor()
@@ -217,19 +216,19 @@ class WorkspaceManager
     else
       event.abortKeyBinding()
 
-  doIncreaseTerminalFontSize: (event) =>
+  doIncreaseTerminalFontSize: (event) ->
     if workspace.isActive()
       workspace.getActiveTerminal().increaseFontSize()
     else
       event.abortKeyBinding()
 
-  doDecreaseTerminalFontSize: (event) =>
+  doDecreaseTerminalFontSize: (event) ->
     if workspace.isActive()
       workspace.getActiveTerminal().decreaseFontSize()
     else
       event.abortKeyBinding()
 
-  doToggleTerminalFocus: (event) =>
+  doToggleTerminalFocus: (event) ->
     if workspace.isActive()
       activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
       activeTextEditor = activeLevelCodeEditor.getTextEditor()
@@ -242,19 +241,19 @@ class WorkspaceManager
     else
       event.abortKeyBinding()
 
-  doScrollTerminalToTop: (event) =>
+  doScrollTerminalToTop: (event) ->
     if workspace.isActive()
       workspace.getActiveTerminal().scrollToTop()
     else
       event.abortKeyBinding()
 
-  doScrollTerminalToBottom: (event) =>
+  doScrollTerminalToBottom: (event) ->
     if workspace.isActive()
       workspace.getActiveTerminal().scrollToBottom()
     else
       event.abortKeyBinding()
 
-  doStartExecution: (event) =>
+  doStartExecution: (event) ->
     if workspace.isActive()
       try
         activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
@@ -275,7 +274,7 @@ class WorkspaceManager
     else
       event.abortKeyBinding()
 
-  doStopExecution: (event) =>
+  doStopExecution: (event) ->
     if workspace.isActive()
       workspace.getActiveLevelCodeEditor().stopExecution()
     else
