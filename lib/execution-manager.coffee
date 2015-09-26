@@ -1,5 +1,7 @@
-exec = require('child_process').exec
-path = require('path')
+exec              = require('child_process').exec
+path              = require('path')
+
+notificationUtils = require('./notification-utils')
 
 # ------------------------------------------------------------------------------
 
@@ -79,7 +81,14 @@ class ExecutionManager
       # FIXME on OS X and Linux this only kills the sh root process but not the
       # child processes (primarily the run process); therefore the close event
       # will not be emitted until the run process is killed manually
-      @process.kill()
-      # ---------------------------------------------------------------------
+      # @process.kill()
+      message =
+        'Unfortunately, this functionality is not yet supported.\nAt the moment
+        execution can only be stopped by killing the process manually.\n \nThis
+        will be fixed in a future release.'
+      notificationUtils.addWarning message,
+        head: 'Sorry! This is not yet supported!'
+        important: true
+      # -----------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------

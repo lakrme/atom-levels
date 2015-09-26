@@ -1,7 +1,8 @@
 {CompositeDisposable,Emitter} = require('atom')
 
-languageManager              = require('./language-manager').getInstance()
+languageManager               = require('./language-manager').getInstance()
 
+notificationUtils             = require('./notification-utils')
 workspaceUtils                = require('./workspace-utils')
 
 AnnotationManager             = require('./annotation-manager')
@@ -55,6 +56,18 @@ class LevelCodeEditor
     @bufferSubscr.dispose()
     @terminal.release()
     @emitter.emit('did-destroy')
+
+    # TODO stop execution here and display a proper info notification as soon as
+    # execution can be stopped programmatically (see execution-manager.coffee)
+    if @isExecuting()
+      message =
+        'You just destroyed a level code editor while it was executing. However,
+        the execution process is still running and now can only be killed
+        manually.\n \nThis will be fixed in a future release.'
+      notificationUtils.addWarning message,
+        head: 'Attention! Execution is still running!'
+        important: true
+    # --------------------------------------------------------------------------
 
   ## Event subscription --------------------------------------------------------
 
@@ -114,7 +127,7 @@ class LevelCodeEditor
     if @isExecuting()
       @restore()
       throw new Error
-        name: 'LanguageError'
+        name: ''
         message: 'DUMMY'
 
     if language.getName() is @language?.getName()

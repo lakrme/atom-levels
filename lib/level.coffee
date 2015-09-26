@@ -5,6 +5,8 @@
 module.exports =
 class Level
 
+  ## Construction --------------------------------------------------------------
+
   constructor: (@properties) ->
     @emitter = new Emitter
 

@@ -8,17 +8,15 @@ module.exports =
   DEFAULT_SHOW_ALL_SUCCESSES: true
   DEFAULT_SHOW_ALL_WARNINGS: true
   DEFAULT_SHOW_ALL_ERRORS: true
+  DEFAULT_INFO_HEAD: 'Hey! The Levels package has got some information for you!'
+  DEFAULT_SUCCESS_HEAD: 'Success!'
+  DEFAULT_WARNING_HEAD: 'Attention! A warning from the Levels package!'
+  DEFAULT_ERROR_HEAD: 'The Levels package has detected an error... :-('
 
-  # default message heads
-  defaultInfoHead: 'Levels: '
-  defaultSuccessHead: 'Levels: '
-  defaultWarningHead: 'Levels: '
-  defaultErrorHead: 'The Levels package has detected an error... :-('
-
-  ## ---------------------------------------------------------------------------
+  ## Displaying package notifcations -------------------------------------------
 
   addInfo: (body,{head,important}={}) ->
-    head ?= @defaultInfoHead
+    head ?= @DEFAULT_INFO_HEAD
     important ?= false
 
     if important or atom.config.get('levels.showAllInfos')
@@ -27,7 +25,7 @@ module.exports =
         dismissable: true
 
   addSuccess: (body,{head,important}={}) ->
-    head ?= @defaultSuccessHead
+    head ?= @DEFAULT_SUCCESS_HEAD
     important ?= false
 
     if important or atom.config.get('levels.showAllSuccesses')
@@ -36,7 +34,7 @@ module.exports =
         dismissable: true
 
   addWarning: (body,{head,important}={}) ->
-    head ?= @defaultWarningHead
+    head ?= @DEFAULT_WARNING_HEAD
     important ?= false
 
     if important or atom.config.get('levels.showAllWarnings')
@@ -45,7 +43,7 @@ module.exports =
         dismissable: true
 
   addError: (body,{head,important}={}) ->
-    head ?= @defaultErrorHead
+    head ?= @DEFAULT_ERROR_HEAD
     important ?= false
 
     if important or atom.config.get('levels.showAllErrors')
@@ -53,8 +51,4 @@ module.exports =
         detail: body
         dismissable: true
 
-  executionNotPossible:
-    """
-    Execution not possible!
-    """
 # ------------------------------------------------------------------------------

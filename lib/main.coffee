@@ -34,7 +34,7 @@ module.exports =
       description:
         "If enabled, level code editor terminals will initially be hidden."
       type: 'boolean'
-      default: not terminalUtils.DEFAULT_IS_VISIBLE
+      default: terminalUtils.DEFAULT_IS_VISIBLE
     defaultTerminalSize:
       title: 'Default Terminal Size'
       description:

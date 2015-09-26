@@ -6,6 +6,8 @@ _         = require('underscore-plus')
 module.exports =
 class Language
 
+  ## Construction --------------------------------------------------------------
+
   constructor: (@properties,levels) ->
     @emitter = new Emitter
 
