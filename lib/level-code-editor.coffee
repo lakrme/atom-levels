@@ -126,9 +126,7 @@ class LevelCodeEditor
   setLanguage: (language,level) ->
     if @isExecuting()
       @restore()
-      throw new Error
-        name: ''
-        message: 'DUMMY'
+      throw {name: 'ExecutionIsRunningError'}
 
     if language.getName() is @language?.getName()
       @setLevel(level) if level?
@@ -141,9 +139,7 @@ class LevelCodeEditor
 
   setLevel: (level) ->
     if @isExecuting()
-      throw new Error
-        name: 'LanguageError'
-        message: 'DUMMY'
+      throw {name: 'ExecutionIsRunningError'}
 
     if @language.hasLevel(level)
       unless level.getName() is @level?.getName()

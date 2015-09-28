@@ -31,6 +31,9 @@ class Language
   getName: ->
     @properties.name
 
+  getInstallationDate: ->
+    @properties.installationDate
+
   getLastActiveLevel: ->
     @properties.lastActiveLevel
 
@@ -49,20 +52,29 @@ class Language
   getLineCommentPattern: ->
     @properties.lineCommentPattern
 
+  getConfigurationFilePath: ->
+    @properties.configFilePath
+
   getExecutablePath: ->
     @properties.executablePath
 
   getExecutionMode: ->
     if @properties.executionMode?
       return @properties.executionMode
+    if (executionModes = @getExecutionModes()).length isnt 0
+      return @properties.executionMode = executionModes[0]
+    undefined
+
+  getExecutionModes: ->
+    executionModes = []
     interpreterCmdPattern = @getInterpreterCommandPattern()
-    if interpreterCmdPattern?
-      return @properties.executionMode = 'interpreted'
     compilerCmdPattern = @getCompilerCommandPattern()
     executionCmdPattern = @getExecutionCommandPattern()
+    if interpreterCmdPattern?
+      executionModes.push('interpreted')
     if compilerCmdPattern? and executionCmdPattern?
-      return @properties.executionMode = 'compiled'
-    undefined
+      executionModes.push('compiled')
+    executionModes
 
   getInterpreterCommandPattern: ->
     @properties.interpreterCmdPattern
@@ -72,12 +84,6 @@ class Language
 
   getExecutionCommandPattern: ->
     @properties.executionCmdPattern
-
-  getInstallationDate: ->
-    @properties.installationDate
-
-  getConfigurationFilePath: ->
-    @properties.configFilePath
 
   ## Setting language properties -----------------------------------------------
 

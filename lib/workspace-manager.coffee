@@ -146,12 +146,9 @@ class WorkspaceManager
     @unsubscribeFromTextEditor(textEditor)
 
   handleDidChangeGrammar: (textEditor,oldGrammarName,newGrammar) ->
-    console.log oldGrammarName
-    console.log newGrammar
     # this condition prevents the handler from being executed for grammar
     # changes caused by level code editor initalizations or level changes
     unless newGrammar.name is oldGrammarName
-      console.log "here"
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
       @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
         textEditor.onDidChangeGrammar (grammar) =>
@@ -176,7 +173,6 @@ class WorkspaceManager
             workspace.setActiveLevelCodeEditor(levelCodeEditor)
     else
       if path.dirname(newGrammar.path).endsWith('levels/grammars')
-        console.log "here3"
         workspace.getLevelCodeEditorForId(textEditor.id).restore()
 
   ## Language manager subscriptions --------------------------------------------
@@ -263,13 +259,25 @@ class WorkspaceManager
         activeLevelCodeEditor.startExecution()
       catch error
         switch error.name
-          when 'ExecutionError'
-            notificationUtils.addError 'jklklsj',
-              head: 'Levels: Execution '
-              important: true
-          else throw error
-
-        notificationUtils.addError "Och neeee do: #{error.mes}",
+          when 'ExecutionIsAlreadyRunningError'
+            message =
+              'Level code execution is already running.\nTry again after program
+              termination.'
+          when 'TerminalIsBusyError'
+            message =
+              'The terminal is busy.\nThat is, another level code editor is
+              using this terminal at the moment.'
+          when 'ExecutionModeNotFoundError'
+            message =
+              'No execution mode could be found.\nPlease define either the
+              interpreter command pattern or the compiler command pattern and
+              the execution command pattern in the language configuration view.'
+          when 'BufferNotSavedError'
+            message =
+              'The text editor\'s buffer is not saved yet.\nSave your program in
+              order to be able to execute it.'
+        notificationUtils.addError message,
+          head: 'Oh no! Execution failed!'
           important: true
     else
       event.abortKeyBinding()

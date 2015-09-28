@@ -1,4 +1,3 @@
-{Emitter} = require('atom')
 {$,View}  = require('atom-space-pen-views')
 
 # ------------------------------------------------------------------------------
@@ -6,116 +5,102 @@
 module.exports =
 class ProgressPanelView extends View
 
-  @content: ->
-    @div class: 'levels-view progress-panel', =>
-      @div class: 'headline', outlet: 'headline', =>
-        @text '(No headline given)'
-      @tag 'progress', class: 'inline-block', \
-          outlet: 'progressBar'
-      @div outlet: 'info', =>
-        @text '(No info given)'
+  @content: (_,{title}) ->
+    @div class: 'levels-view panel progress-panel', =>
+      @div class: 'title', =>
+        @text title if title?
+      @tag 'progress', class: 'progress-bar', outlet: 'progressBar'
+      @div class: 'info', outlet: 'info', =>
+        @text 'Preparing...'
       @div class: 'issue-log-container', =>
         @div class: 'issue-count', outlet: 'issueCount', =>
-          @text '0 Warnings, 0 Errors'
+          @text '0 Warning(s), 0 Error(s)'
         @div class: 'issue-log', outlet: 'issueLog'
       @div class: 'controls', outlet: 'controls', =>
-        @button class: 'btn pull-right', \
-            click: 'handleDidClickCloseButton', \
-            outlet: 'closeButton', =>
+        @button class: 'btn pull-right', click: 'handleDidClickCloseButton', =>
           @text 'Close'
 
   ## Initialization ------------------------------------------------------------
 
-  initialize: ->
-    @emitter = new Emitter
+  initialize: (@progressEmitter,options={}) ->
+    # initialize parameters
+    @onDidOpen = ->
+      options.onDidOpen?()
+      @progressEmitter.start()
+    @onDidClose = options.onDidClose
+    @closeOnSuccess = options.closeOnSuccess ? true
+
+    # initialize issue counters
     @warningCount = 0
     @errorCount = 0
 
-  ## Event subscription --------------------------------------------------------
+    # set up progress emitter event handlers
+    @progressEmitter.setUp
+      emitProgress: @updateOnDidEmitProgress
+      emitWarning: @updateOnDidEmitWarning
+      emitError: @updateOnDidEmitError
 
-  onDidShow: (callback) ->
-    @emitter.on('did-show',callback)
+    # open progress panel
+    @open()
 
-  onDidHide: (callback) ->
-    @emitter.on('did-hide',callback)
+  ## Updating the progress panel -----------------------------------------------
 
-  ## Controlling the progress panel --------------------------------------------
-
-  update: ({headline,progress,info}) ->
-    @updateHeadline(headline) if headline?
-    @updateProgress(progress) if progress?
-    @updateInfo(info) if info?
-
-  updateHeadline: (headline) ->
-    @headline.empty()
-    @headline.append(headline)
-
-  updateProgress: (value) ->
+  updateOnDidEmitProgress: ({value,info}) =>
+    # update progress value
     if 0 <= value <= 100
       @progressBar.attr('max','100')
       @progressBar.attr('value',"#{value}")
-      @done() if value is 100
 
-  updateInfo: (info) ->
+    # update info
     @info.empty()
     @info.append(info)
 
-  addWarning: (warningMsg) ->
+    # stop progressing if done
+    @done() if value is 100
+
+  updateOnDidEmitWarning: (message) =>
     @warningCount++
-    @issueCount.text("#{@warningCount} Warnings, #{@errorCount} Errors")
-    warning = $("<span class=\"text text-warning\"></span>")
-    warning.append("Warning: #{warningMsg}")
+    @issueCount.text("#{@warningCount} Warning(s), #{@errorCount} Error(s)")
+    warning = $('<span class="text text-warning"></span>')
+    warning.append("Warning: #{message}")
     @issueLog.append(warning)
     @issueLog.scrollTop(@issueLog[0].scrollHeight)
 
-  addError: (errorMsg) ->
+  updateOnDidEmitError: (message) =>
     @errorCount++
-    @issueCount.text("#{@warningCount} Warnings, #{@errorCount} Errors")
-    error = $("<span class=\"text text-error\">Error: #{errorMsg}</span>")
+    @issueCount.text("#{@warningCount} Warning(s), #{@errorCount} Error(s)")
+    error = $('<span class="text text-error"></span>')
+    error.append("Error: #{message}")
     @issueLog.append(error)
     @issueLog.scrollTop(@issueLog[0].scrollHeight)
-
-  clearIssueLog: ->
-    @warningCount = 0
-    @errorCount = 0
-    @issueCount.text("#{@warningCount} Warnings, #{@errorCount} Errors")
-    @issueLog.empty()
-
-  reset: ->
-    @update
-      headline: '(No headline given)'
-      info: '(No info given)'
-    @progressBar.removeAttr('max')
-    @progressBar.removeAttr('value')
-    @clearIssueLog()
+    @done()
 
   done: ->
-    if @warningCount > 0 or @errorCount > 0
+    @progressEmitter.stop()
+    if not @closeOnSuccess or @warningCount > 0 or @errorCount > 0
       @controls.css({visibility: 'visible'})
     else
-      @hide()
+      @close()
 
   ## Handling view events ------------------------------------------------------
 
   handleDidClickCloseButton: ->
-    @hide()
+    @close()
 
   ## Opening and closing the progress panel ------------------------------------
 
-  show: (callback) ->
-    # @closeButton.css('visiblity','hidden')
+  open: ->
+    @topPanel = atom.workspace.addTopPanel({item: @})
     outerHeight = @outerHeight()
-    @css({display: 'block',top: "-#{outerHeight+1}px"})
-    @controls.css({visibility: 'hidden'})
+    @css({top: "-#{outerHeight}px"})
     @animate {top: '-1px'}, 'fast', =>
-      @emitter.emit('did-show')
-      callback() if callback?
+      @onDidOpen()
 
-  hide: ->
+  close: ->
     outerHeight = @outerHeight()
-    @animate {top: "-#{outerHeight+1}px"}, 'fast', =>
-      @reset()
-      @css({display: 'none'})
-      @emitter.emit('did-hide')
+    @animate {top: "-#{outerHeight}px"}, 'fast', =>
+      @topPanel.destroy()
+      @topPanel = null
+      @onDidClose?()
 
 # ------------------------------------------------------------------------------

@@ -25,21 +25,13 @@ class ExecutionManager
     runPath = @language.getExecutablePath()
 
     if @isExecuting()
-      throw new Error
-        name: 'ExecutionNotPossibleError'
-        message: ''
+      throw {name: 'ExecutionIsAlreadyRunningError'}
     if @terminal.isExecuting()
-      throw new Error
-        name: 'ExecutionError'
-        message: 'Execution is already running.'
+      throw {name: 'TerminalIsBusyError'}
     unless (executionMode = @language.getExecutionMode())?
-      throw new Error
-        name: 'ExecutionError'
-        message: ''
+      throw {name: 'ExecutionModeNotFoundError'}
     unless (filePath = @textEditor.getPath())?
-      throw new Error
-        name: ''
-        message: ''
+      throw {name: 'BufferNotSavedError'}
 
     @terminal.writeLn('Running level code...')
 
