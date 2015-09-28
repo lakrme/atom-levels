@@ -2,81 +2,19 @@
 @import "levels-ui-variables";
 
 .levels-view {
+  &.panel {
+    background-color: @panel-background-color;
+    border: 1px solid @panel-border-color;
+    border-radius: @component-border-radius;
+    box-shadow: 0 0 10px @panel-box-shadow-color;
 
-  &.language-manager {
+    margin-left: auto;
+    margin-right: auto;
+    padding: @component-padding;
 
-    .overlay-hack {
-      display: none;
-      height: 100%;
-      left: 0;
-      position: absolute;
-      top: 0;
-      width: 100%;
-      z-index: 2;
-    }
-
-    .language-list {
-
-      .header {
-        background-color: @language-manager-background-color;
-        margin-bottom: @component-padding;
-        padding: @component-padding;
-        .heading {
-          font-size: 16px;
-          margin-bottom: @component-padding;
-        }
-        >atom-text-editor {
-          margin: 0;
-          &.is-focused {background-color: @input-background-color;}
-        }
-      }
-
-      .language-cards {
-        height: (@language-card-height * 5) + 5px;
-        margin-bottom: @component-padding - 1px;
-        overflow-y: scroll;
-        .language-card {
-          background-color: @language-manager-background-color;
-          height: @language-card-height;
-          margin-bottom: 1px;
-          padding: @component-padding;
-          &:hover {
-            background-color: lighten(@overlay-background-color,5%);
-          }
-          .controls {
-            height: 100%;
-            padding-top: 2.5px;
-          }
-          .language-name {
-            color: @text-color-highlight;
-            font-size: 12px;
-            margin-right: 5px;
-          }
-          .level-count {
-            margin-right: 5px;
-          }
-          .newness-indicator {
-            &.icon::before {
-              margin-right: 0;
-            }
-          }
-        }
-      }
-
-      >.controls {
-        background-color: lighten(@overlay-background-color,3%);
-        margin-top: @component-padding;
-        overflow: auto;
-        padding: @component-padding;
-      }
-    }
-  }
-
-  &.level-status {
-    a, a:focus, a:hover {
-      color: @text-color;
-      outline: 0;
-    }
+    position: absolute;
+    right: 0;
+    left: 0;
   }
 
   &.terminal-panel {
@@ -193,79 +131,4 @@
       right: 10px;
     }
   }
-
-  &.progress-panel {
-    background-color: @overlay-background-color;
-    border: 1px solid @overlay-border-color;
-    border-radius: @component-border-radius;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    display: none;
-    left: 0;
-    margin-left: auto;
-    margin-right: auto;
-    padding: @component-padding * 2;
-    position: absolute;
-    right: 0;
-    width: 300px;
-    z-index: 3;
-    .headline {
-      color: @text-color-highlight;
-    }
-    progress {
-      margin: 2px 0;
-      width: 100%;
-    }
-    .issue-log-container {
-      border-top: 1px solid @overlay-border-color;
-      margin-top: @component-padding / 2;
-      padding: (@component-padding / 2) 0;
-      .issue-count {
-        margin-bottom: 2px;
-      }
-      .issue-log {
-        height: 60px;
-        overflow-y: scroll;
-        span {display: block;}
-      }
-    }
-    .controls {
-      overflow: auto;
-    }
-  }
-
-  &.annotation-overlay {
-    background-color: fade(#aaa,90%);
-    border-top-right-radius: @component-border-radius;
-    border-bottom-right-radius: @component-border-radius;
-    border-bottom-left-radius: @component-border-radius;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    color: #000;
-    display: none;
-    font-size: 10px;
-    margin-top: 3px;
-    padding: @component-padding / 2;
-    width: 300px;
-    hr {
-      border-top: 1px solid #888;
-      margin: 5px 0;
-    }
-    .type {
-      font-size: 9px;
-      margin-right: 5px;
-    }
-    .position {color: #666;}
-    .source {color: #666;}
-    &::before {
-      border-color: transparent transparent transparent fade(#aaa,90%);
-      border-style: solid;
-      border-width: 6px 0 0 6px;
-      content: "";
-      height: 0;
-      left: 0;
-      position: absolute;
-      top: -3px;
-      width: 0;
-    }
-  }
-
 }

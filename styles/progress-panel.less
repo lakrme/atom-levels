@@ -1,0 +1,40 @@
+@import "ui-variables";
+@import "levels-ui-variables";
+
+.levels-view.progress-panel {
+  padding: @component-padding * 2;
+  width: 300px;
+  z-index: 6;
+
+  >.title {
+    color: @text-color-highlight;
+  }
+
+  >.progress-bar {
+    margin: 2px 0 0 0;
+    width: 100%;
+  }
+
+  >.issue-log-container {
+    border-top: 1px solid @overlay-border-color;
+    margin: @component-padding / 2 0;
+    padding: (@component-padding / 2) 0;
+
+    >.issue-count {
+      margin-bottom: 2px;
+    }
+
+    >.issue-log {
+      height: 60px;
+      overflow-y: scroll;
+      span {display: block;}
+    }
+
+  }
+
+  >.controls {
+    overflow: auto;
+    visibility: hidden;
+  }
+
+}

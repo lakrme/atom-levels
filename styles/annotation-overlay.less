@@ -1,0 +1,49 @@
+@import "ui-variables";
+@import "levels-ui-variables";
+
+.levels-view.annotation-overlay {
+  background-color: fade(#aaa,90%);
+  border-top-right-radius: @component-border-radius;
+  border-bottom-right-radius: @component-border-radius;
+  border-bottom-left-radius: @component-border-radius;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  color: #000;
+  display: none;
+  font-size: 10px;
+
+  margin-top: 3px;
+  padding: @component-padding / 2;
+
+  width: 300px;
+
+  hr {
+    border-top: 1px solid #888;
+    margin: 5px 0;
+  }
+
+  &::before {
+    border-color: transparent transparent transparent fade(#aaa,90%);
+    border-style: solid;
+    border-width: 6px 0 0 6px;
+    content: "";
+    height: 0;
+    left: 0;
+    position: absolute;
+    top: -3px;
+    width: 0;
+  }
+
+  .type {
+    font-size: 9px;
+    margin-right: 5px;
+  }
+
+  .position {
+    color: #666;
+  }
+
+  .source {
+    color: #666;
+  }
+
+}

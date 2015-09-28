@@ -1,0 +1,81 @@
+@import "ui-variables";
+@import "levels-ui-variables";
+
+.levels-view.language-settings {
+  width: 400px;
+  z-index: 6;
+
+  >.header {
+    background-color: @panel-section-background-color;
+    margin-bottom: @component-padding;
+    padding: @component-padding;
+
+    >.heading {
+      font-size: 16px;
+      margin: 0;
+    }
+
+  }
+
+  >.settings-sections {
+
+    >.settings-section {
+      background-color: @panel-section-background-color;
+      margin-bottom: @component-padding;
+      padding: @component-padding;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      >.setting {
+        margin-bottom: @component-padding;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        >.setting-label {
+          margin-bottom: 5px;
+
+          >.setting-title {
+            color: @text-color;
+            font-size: 12px;
+            margin: 0;
+          }
+
+          >.setting-description {
+            color: @text-color-subtle;
+            font-size: 11px;
+          }
+
+        }
+
+        select {
+          background-color: @button-background-color;
+          border: 1px solid rgba(0,0,0,0.5);
+          color: @text-color;
+          height: 25px;
+          width: 100%;
+          -webkit-appearance: menulist-button;
+
+          &:hover {
+            background-color: @button-background-color-hover;
+          }
+
+        }
+
+      }
+
+    }
+
+  }
+
+  >.controls {
+    background-color: @panel-section-background-color;
+    margin-top: @component-padding;
+    overflow: auto;
+    padding: @component-padding;
+  }
+
+}
