@@ -1,5 +1,8 @@
-# levels package
+# Levels package
 
-A short description of your package.
+The Atom interface to level programming languages created with the LPS plug-in
+for Eclipse!
 
-![A screenshot of your package](https://f.cloud.github.com/assets/69169/2290250/c35d867a-a017-11e3-86be-cd7c5bf3ff9b.gif)
+![](https://dl.dropboxusercontent.com/u/21612159/levels1.png)
+
+More information coming soon!
