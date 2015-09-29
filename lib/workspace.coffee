@@ -52,13 +52,11 @@ class Workspace
   addLevelCodeEditor: (levelCodeEditor) ->
     @levelCodeEditorsById[levelCodeEditor.getId()] = levelCodeEditor
     @emitter.emit('did-add-level-code-editor',levelCodeEditor)
-    console.log @levelCodeEditorsById
 
   destroyLevelCodeEditor: (levelCodeEditor) ->
     delete @levelCodeEditorsById[levelCodeEditor.getId()]
     levelCodeEditor.destroy()
     @emitter.emit('did-destroy-level-code-editor',levelCodeEditor)
-    console.log @levelCodeEditorsById
 
   getLevelCodeEditorForId: (levelCodeEditorId) ->
     @levelCodeEditorsById[levelCodeEditorId]
