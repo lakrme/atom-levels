@@ -89,6 +89,8 @@ class ExecutionManager
         #     important: true
         #   # -----------------------------------------------------------------------
 
+  ## Killing processes ---------------------------------------------------------
+
   killProcessOnDarwinAndLinux: (parentPid) ->
     # get child process IDs
     try
@@ -105,7 +107,7 @@ class ExecutionManager
       @killProcessOnDarwinAndLinux(childPid)
 
     # kill parent process
-    process.kill(parentPid)
+    try process.kill(parentPid)
 
   # NOTE stolen from Atom's BufferedNodeProcess API (Oops!)
   killProcessOnWin32: (parentPid) ->
@@ -120,7 +122,7 @@ class ExecutionManager
       out = ''
       wmicProcess.stdout.on 'data', (data) ->
         out += data
-      wmicProcess.stdout.on 'close', ->
+      wmicProcess.stdout.on 'close', =>
         # get child process pids
         childPids = out.split(/\s+/)
                       .filter (pid) -> /^\d+$/.test(pid)
@@ -130,7 +132,7 @@ class ExecutionManager
         for childPid in childPids
           @killProcessOnWin32(childPid)
         # kill parent process
-        process.kill(parentPid)
+        try process.kill(parentPid)
     catch error
       # TODO show proper error notification here
       console.log("Spawn error")
