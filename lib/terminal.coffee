@@ -33,7 +33,7 @@ class Terminal
 
     # initialize terminal interface properties
     @visible = params.visible ? \
-      atom.config.get('levels.defaultTerminalIsVisible')
+      not atom.config.get('levels.defaultTerminalIsHidden')
     @size = params.size ? \
       atom.config.get('levels.defaultTerminalSize')
     @fontSize = params.fontSize ? \

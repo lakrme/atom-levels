@@ -4,7 +4,7 @@ module.exports =
 
   ## Constants -----------------------------------------------------------------
 
-  DEFAULT_IS_VISIBLE: true
+  DEFAULT_IS_HIDDEN: false
   DEFAULT_SIZE: 20
   MIN_SIZE: 15
   DEFAULT_FONT_SIZE: 12

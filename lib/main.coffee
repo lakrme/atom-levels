@@ -29,12 +29,12 @@ module.exports =
     #   type: 'object'
     #   properties:
     # --------------
-    defaultTerminalIsVisible:
+    defaultTerminalIsHidden:
       title: 'Initially Hide The Terminal'
       description:
         "If enabled, level code editor terminals will initially be hidden."
       type: 'boolean'
-      default: terminalUtils.DEFAULT_IS_VISIBLE
+      default: terminalUtils.DEFAULT_IS_HIDDEN
     defaultTerminalSize:
       title: 'Default Terminal Size'
       description:
