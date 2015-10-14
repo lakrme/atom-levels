@@ -10,6 +10,13 @@
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
   },
+  "providedServices": {
+    "levels": {
+      "versions": {
+        "0.2.0": "provideLevels"
+      }
+    }
+  },
   "consumedServices": {
     "status-bar": {
       "versions": {

@@ -84,7 +84,7 @@ module.exports =
       default: notificationUtils.DEFAULT_SHOW_ALL_ERRORS
 
   activate: (state) ->
-    languageManager.loadInstalledLanguages()
+    # languageManager.loadInstalledLanguages()
 
     workspaceManager.setUpWorkspace(state)
     workspaceManager.activateEventHandlers()
@@ -94,6 +94,16 @@ module.exports =
     workspaceManager.cleanUpWorkspace()
     workspaceManager.deactivateEventHandlers()
     workspaceManager.deactivateCommandHandlers()
+
+  ## Provided services ---------------------------------------------------------
+
+  provideLevels: ->
+    languageRegistry:
+      addLanguage: languageManager.addLanguage.bind(languageManager)
+      readLanguage: languageManager.readLanguage.bind(languageManager)
+      loadLanguage: languageManager.loadLanguage.bind(languageManager)
+      removeLanguage: languageManager.removeLanguage.bind(languageManager)
+      removeLanguages: languageManager.removeLanguages.bind(languageManager)
 
   ## Consumed services ---------------------------------------------------------
 
