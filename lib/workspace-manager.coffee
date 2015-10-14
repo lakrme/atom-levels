@@ -276,6 +276,8 @@ class WorkspaceManager
             message =
               'The text editor\'s buffer is not saved yet.\nSave your program in
               order to be able to execute it.'
+          else
+            message = error.message
         notificationUtils.addError message,
           head: 'Oh no! Execution failed!'
           important: true
