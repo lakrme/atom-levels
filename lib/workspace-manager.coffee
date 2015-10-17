@@ -1,13 +1,12 @@
 {CompositeDisposable} = require('atom')
 path                  = require('path')
 
-languageManager       = require('./language-manager').getInstance()
+languageRegistry      = require('./language-manager').getInstance()
 workspace             = require('./workspace').getInstance()
 
 notificationUtils     = require('./notification-utils')
 workspaceUtils        = require('./workspace-utils')
 
-LanguageManagerView   = require('./language-manager-view')
 LevelCodeEditor       = require('./level-code-editor')
 LevelStatusView       = require('./level-status-view')
 LevelSelectView       = require('./level-select-view')
@@ -21,46 +20,38 @@ class WorkspaceManager
 
   ## Set-up and clean-up operations --------------------------------------------
 
+  # Initializes the Levels workspace view components (invoked on activation).
   setUpWorkspace: (@state) ->
-    # add view providers
     @viewProviders = new CompositeDisposable
-    @viewProviders.add atom.views.addViewProvider Terminal, \
-      (terminal) ->
-        terminalView = new TerminalView(terminal)
-        # initialize the terminal
-        terminal.newLine()
-        terminal.writeInfo('Welcome to the Levels terminal!')
-        terminalView
+    @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
+      terminalView = new TerminalView(terminal)
+      # initialize the terminal
+      terminal.newLine()
+      terminal.writeInfo('Welcome to the Levels terminal!')
+      terminalView
 
-    # create workspace view components
-    @languageManagerView = new LanguageManagerView
     @levelStatusView = new LevelStatusView
     @levelSelectView = new LevelSelectView
     @terminalPanelView = new TerminalPanelView
 
+  # Destroys the Levels workspace view components (invoked on deactivation).
   cleanUpWorkspace: ->
-    # remove view providers
     @viewProviders.dispose()
-
-    # destroy workspace view components
     @levelStatusView.destroy()
     @levelSelectView.destroy()
     @terminalPanelView.destroy()
-
-    # destroy status bar tiles
     @levelStatusTile.destroy()
 
   activateEventHandlers: ->
     @subscribeToAtomWorkspace()
-    @subscribeToLanguageManager()
+    @subscribeToLanguageRegistry()
 
   deactivateEventHandlers: ->
     @unsubscribeFromAtomWorkspace()
-    @unsubscribeFromLanguageManager()
+    @unsubscribeFromLanguageRegistry()
 
   activateCommandHandlers: ->
     @commandHandlers = atom.commands.add 'atom-workspace',
-      'levels:toggle-language-manager': @doToggleLanguageManager
       'levels:toggle-level-select': @doToggleLevelSelect
       'levels:toggle-terminal': @doToggleTerminal
       'levels:increase-terminal-font-size': @doIncreaseTerminalFontSize
@@ -79,19 +70,25 @@ class WorkspaceManager
   subscribeToAtomWorkspace: ->
     @textEditorSubscrsById = {}
     @atomWorkspaceSubscrs = new CompositeDisposable
-    @atomWorkspaceSubscrs.add atom.workspace.observeTextEditors (textEditor) =>
-      @handleDidAddTextEditor(textEditor)
-    @atomWorkspaceSubscrs.add atom.workspace.observeActivePaneItem (item) =>
-      @handleDidChangeActivePaneItem(item)
+    @atomWorkspaceSubscrs.add atom.workspace.onDidAddTextEditor \
+      ({textEditor}) => @handleDidAddTextEditor(textEditor)
+    @atomWorkspaceSubscrs.add atom.workspace.onDidChangeActivePaneItem \
+      (item) => @handleDidChangeActivePaneItem(item)
+
+    # subscribe to open text editors on startup
+    for textEditor in atom.workspace.getTextEditors()
+      @subscribeToTextEditor(textEditor)
 
   unsubscribeFromAtomWorkspace: ->
-    # dispose Atom workspace event handlers
     @atomWorkspaceSubscrs.dispose()
 
-    # dispose text editor event handlers
+    # unsubscribe from all text editors
     for textEditor in atom.workspace.getTextEditors()
       @unsubscribeFromTextEditor(textEditor)
 
+  # The handler to be invoked when the active pane item changes in the Atom
+  # workspace. Activates (deactivates) the Levels workspace when the active text
+  # editor is (not) a level code editor.
   handleDidChangeActivePaneItem: (item) ->
     textEditor = atom.workspace.getActiveTextEditor()
     if textEditor? and workspace.isLevelCodeEditor(textEditor)
@@ -100,12 +97,10 @@ class WorkspaceManager
     else
       workspace.unsetActiveLevelCodeEditor()
 
+  # The handler to be invoked when a text editor was added to the Atom
+  # workspace. Creates a level code editor if language information can be
+  # derived from the added text editor and updates the Levels workspace.
   handleDidAddTextEditor: (textEditor) ->
-    levelCodeEditorState = @state?.levelCodeEditorStatesById?[textEditor.id]
-    if levelCodeEditorState?
-      levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState,\
-        textEditor)
-
     unless levelCodeEditor?
       result = workspaceUtils.readLanguageInformationFromFileHeader(textEditor)
       if (language = result?.language)?
@@ -117,7 +112,7 @@ class WorkspaceManager
       levelCodeEditor = new LevelCodeEditor({textEditor,language}) if language?
 
     unless levelCodeEditor?
-      language = languageManager.getLanguageForGrammar(textEditor.getGrammar())
+      language = languageRegistry.getLanguageForGrammar(textEditor.getGrammar())
       levelCodeEditor = new LevelCodeEditor({textEditor,language}) if language?
 
     workspace.addLevelCodeEditor(levelCodeEditor) if levelCodeEditor?
@@ -128,35 +123,39 @@ class WorkspaceManager
   subscribeToTextEditor: (textEditor) ->
     currentGrammarName = textEditor.getGrammar().name
     @textEditorSubscrsById[textEditor.id] =
-      didDestroySubscr: textEditor.onDidDestroy =>
-        @handleDidDestroy(textEditor)
       didChangeGrammarSubscr: textEditor.onDidChangeGrammar (grammar) =>
-        @handleDidChangeGrammar(textEditor,currentGrammarName,grammar)
+        @handleDidChangeGrammarOfTextEditor(\
+          textEditor,currentGrammarName,grammar)
+      didDestroySubscr: textEditor.onDidDestroy =>
+        @handleDidDestroyTextEditor(textEditor)
 
   unsubscribeFromTextEditor: (textEditor) ->
     textEditorSubscr = @textEditorSubscrsById[textEditor.id]
-    textEditorSubscr?.didDestroySubscr.dispose()
     textEditorSubscr?.didChangeGrammarSubscr.dispose()
+    textEditorSubscr?.didDestroySubscr.dispose()
     delete @textEditorSubscrsById[textEditor.id]
 
-  handleDidDestroy: (textEditor) ->
-    if workspace.isLevelCodeEditor(textEditor)
-      levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
-      workspace.destroyLevelCodeEditor(levelCodeEditor)
-    @unsubscribeFromTextEditor(textEditor)
+  # The handler to be invoked when the grammar of a text editor was changed in
+  # the Atom workspace. Determines if a level code editor must be created or
+  # destroyed for the given text editor based on the grammar change and updates
+  # the Levels workspace if necessary.
+  #
+  # The parameter `oldGrammarName` is used to check if the grammar change event
+  # was fired due to a level change (in this case `oldGrammarName` and the name
+  # of `newGrammar` are equal).
+  handleDidChangeGrammarOfTextEditor: (textEditor,oldGrammarName,newGrammar) ->
+    # temporarily deactivate this event handler to prevent it from being invoked
+    # again for grammar changes caused by itself
+    @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
 
-  handleDidChangeGrammar: (textEditor,oldGrammarName,newGrammar) ->
-    # this condition prevents the handler from being executed for grammar
-    # changes caused by level code editor initalizations or level changes
     unless newGrammar.name is oldGrammarName
-      @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
-      @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
-        textEditor.onDidChangeGrammar (grammar) =>
-          @handleDidChangeGrammar(textEditor,newGrammar.name,grammar)
-
-      language = languageManager.getLanguageForGrammar(newGrammar)
+      language = languageRegistry.getLanguageForGrammar(newGrammar)
       if workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
+        # if the text editor is part of the Levels workspace and the new grammar
+        # is another Levels (dummy) grammar, we just update the level code
+        # editor's language, otherwise, we destroy the level code editor and
+        # exit the Levels workspace if necessary
         if language?
           levelCodeEditor.setLanguage(language)
         else
@@ -164,33 +163,125 @@ class WorkspaceManager
           if textEditor is atom.workspace.getActiveTextEditor()
             workspace.unsetActiveLevelCodeEditor()
       else
-        if language?
-          levelCodeEditor = new LevelCodeEditor
-            textEditor: textEditor
-            language: language
+        # if the text editor isn't part of the Levels workspace yet, only create
+        # a level code editor if the new grammar is the language's dummy grammar
+        # (which is the case when the user changes the grammar manually, for
+        # instance), otherwise the grammar change happened while creating a new
+        # level code editor for this text editor (do nothing in this case)
+        if language? and path.basename(newGrammar.path) is 'dummy.cson'
+          levelCodeEditor = new LevelCodeEditor({textEditor,language})
           workspace.addLevelCodeEditor(levelCodeEditor)
           if textEditor is atom.workspace.getActiveTextEditor()
             workspace.setActiveLevelCodeEditor(levelCodeEditor)
     else
-      if path.dirname(newGrammar.path).endsWith('levels/grammars')
+      # if the grammar names are equal it is assumed that the text editor is
+      # part of the Levels workspace (which is not very safe, because, in fact,
+      # choosing the current grammar again via the grammar selector does not
+      # fire the event, but we don't know if other packages can perform such
+      # grammar changes) and that the grammar change was caused by a level
+      # change (then nothing happens) or by Atom after saving the buffer to a
+      # path with a file extension that is associated with the current language
+      # (in the latter case Atom chooses the dummy grammar from the grammar
+      # registry, which is why we have to restore the level grammar here)
+      # TODO choose a more save approach here for this
+      if path.basename(newGrammar.path) is 'dummy.cson'
         workspace.getLevelCodeEditorForId(textEditor.id).restore()
+      # ----------------------------------------------
 
-  ## Language manager subscriptions --------------------------------------------
+    # reactivate the event handler
+    @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
+      textEditor.onDidChangeGrammar (grammar) =>
+        @handleDidChangeGrammarOfTextEditor(\
+          textEditor,newGrammar.name,grammar)
 
-  subscribeToLanguageManager: ->
-    @languageManagerSubscrs = new CompositeDisposable
-    @languageManagerSubscrs.add languageManager.onDidRemoveLanguages \
-      (removedLanguages) => @handleDidRemoveLanguages(removedLanguages)
+  handleDidDestroyTextEditor: (textEditor) ->
+    if workspace.isLevelCodeEditor(textEditor)
+      levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
+      workspace.destroyLevelCodeEditor(levelCodeEditor)
+    @unsubscribeFromTextEditor(textEditor)
 
-  unsubscribeFromLanguageManager: ->
-    @languageManagerSubscrs.dispose()
+  ## Language registry subscriptions -------------------------------------------
 
-  handleDidRemoveLanguages: (removedLanguages) ->
+  subscribeToLanguageRegistry: ->
+    @languageRegistrySubscrs = new CompositeDisposable
+    @languageRegistrySubscrs.add languageRegistry.onDidAddLanguage \
+      (addedLanguage) =>
+        @handleDidAddLanguageToLanguageRegistry(addedLanguage)
+    @languageRegistrySubscrs.add languageRegistry.onDidRemoveLanguage \
+      (removedLanguage) =>
+        @handleDidRemoveLanguageFromLanguageRegistry(removedLanguage)
+
+  unsubscribeFromLanguageRegistry: ->
+    @languageRegistrySubscrs.dispose()
+
+  # The handler to be invoked when a language was added to the language
+  # registry, for example, when a language package is being activated.
+  # Identifies text editors that can be associated with the added language and
+  # adds them to the Levels workspace.
+  handleDidAddLanguageToLanguageRegistry: (addedLanguage) ->
+    for textEditor in atom.workspace.getTextEditors()
+      unless workspace.isLevelCodeEditor(textEditor)
+        levelCodeEditor = null
+
+        # check if text editor was serialized with the added language
+        levelCodeEditorState = @state?.levelCodeEditorStatesById?[textEditor.id]
+        if levelCodeEditorState?
+          # try to deserialize level code editor with updated language registry
+          # (returns `undefined` if the associated language of this text editor
+          # has not been added yet)
+          levelCodeEditor = atom.deserializers.deserialize(\
+            levelCodeEditorState,textEditor)
+          # if successful, remove text editor serialization from state (prevents
+          # the re-deserialization of the level code editor when adding another
+          # language)
+          if levelCodeEditor?
+            delete @state.levelCodeEditorStatesById[textEditor.id]
+
+        # check if text editor is associated with the language
+        # TODO replace with a more efficient approach
+        unless levelCodeEditor?
+          res = workspaceUtils.readLanguageInformationFromFileHeader(textEditor)
+          if (language = res?.language)? and language is addedLanguage
+            level = res.level
+            levelCodeEditor = new LevelCodeEditor({textEditor,language,level})
+
+        unless levelCodeEditor?
+          language = workspaceUtils.readLanguageFromFileExtension(textEditor)
+          if language? and language is addedLanguage
+            levelCodeEditor = new LevelCodeEditor({textEditor,language})
+
+        unless levelCodeEditor?
+          grammar = textEditor.getGrammar()
+          language = languageRegistry.getLanguageForGrammar(grammar)
+          if language? and language is addedLanguage
+            levelCodeEditor = new LevelCodeEditor({textEditor,language})
+        # -------------------------------------------
+
+        # add level code editor to workspace if successful
+        if levelCodeEditor?
+          workspace.addLevelCodeEditor(levelCodeEditor)
+          if textEditor is atom.workspace.getActiveTextEditor()
+            workspace.setActiveLevelCodeEditor(levelCodeEditor)
+
+  # The handler to be invoked when a language was removed from the language
+  # registry, for example, when a language package is being deactivated. Updates
+  # the Levels workspace and destroys all level code editors that are bound to
+  # the removed language.
+  handleDidRemoveLanguageFromLanguageRegistry: (removedLanguage) ->
+    for levelCodeEditor in workspace.getLevelCodeEditors()
+      if levelCodeEditor.getLanguage() is removedLanguage
+
+        # update Levels workspace
+        workspace.destroyLevelCodeEditor(levelCodeEditor)
+        textEditor = levelCodeEditor.getTextEditor()
+        if textEditor is atom.workspace.getActiveTextEditor()
+          workspace.unsetActiveLevelCodeEditor()
+
+        # set the text editor's grammar to the default grammar
+        nullGrammar = atom.grammars.grammarForScopeName('text.plain')
+        textEditor.setGrammar(nullGrammar)
 
   ## Command handlers ----------------------------------------------------------
-
-  doToggleLanguageManager: (event) =>
-    @languageManagerView.toggle()
 
   doToggleLevelSelect: (event) =>
     if workspace.isActive()

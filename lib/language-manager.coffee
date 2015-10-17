@@ -34,30 +34,6 @@ class LanguageManager
   onDidRemoveLanguage: (callback) ->
     @emitter.on('did-remove-language',callback)
 
-  onDidRemoveLanguages: (callback) ->
-    @emitter.on('did-remove-languages',callback)
-
-  onDidStartInstalling: (callback) ->
-    @emitter.on('did-start-installing',callback)
-
-  onDidStopInstalling: (callback) ->
-    @emitter.on('did-stop-installing',callback)
-
-  onDidBeginInstallationStep: (callback) ->
-    @emitter.on('did-begin-installation-step',callback)
-
-  onDidGenerateInstallationWarning: (callback) ->
-    @emitter.on('did-generate-installation-warning',callback)
-
-  onDidGenerateInstallationError: (callback) ->
-    @emitter.on('did-generate-installation-error',callback)
-
-  onDidStartUninstalling: (callback) ->
-    @emitter.on('did-start-uninstalling',callback)
-
-  onDidStopUninstalling: (callback) ->
-    @emitter.on('did-stop-uninstalling',callback)
-
   ## Adding languages ----------------------------------------------------------
 
   addLanguage: (language) ->
@@ -78,30 +54,15 @@ class LanguageManager
     @addLanguage(language)
     language
 
-  loadInstalledLanguages: ->
-    for dirName in fs.readdirSync(@languagesDirPath)
-      dirPath = path.join(@languagesDirPath,dirName)
-      if fs.statSync(dirPath).isDirectory()
-        @loadLanguage(path.join(dirPath,'config.json'))
-    undefined
-
   ## Removing languages --------------------------------------------------------
 
   removeLanguage: (language) ->
-    removedLanguages = @removeLanguages([language])
-    removedLanguages[0]
-
-  removeLanguages: (languages) ->
-    removedLanguages = []
-    for language in languages
-      languageName = language.getName()
-      if @getLanguageForName(languageName)?
-        delete @languagesByName[languageName]
-        @emitter.emit('did-remove-language',language)
-        removedLanguages.push(language)
-    if removedLanguages.length > 0
-      @emitter.emit('did-remove-languages',removedLanguages)
-    removedLanguages
+    languageName = language.getName()
+    if @getLanguageForName(languageName)?
+      delete @languagesByName[languageName]
+      @emitter.emit('did-remove-language',language)
+      return language
+    undefined
 
   ## Queries -------------------------------------------------------------------
 
@@ -190,9 +151,7 @@ class LanguageManager
         properties.lastActiveLevel ?= undefined
 
     # set executable path
-    executablePath = config.executable
-    unless path.isAbsolute(executablePath)
-      executablePath = path.join(configDirPath,executablePath)
+    executablePath = path.join(configDirPath,'executable',process.platform,'run')
     properties.executablePath = executablePath
 
     new Language(properties,levels)
@@ -240,181 +199,6 @@ class LanguageManager
     configFilePath = language.getConfigurationFilePath()
     @writeLanguageToConfigurationFile(language,configFilePath)
     undefined
-
-  ## Installing and uninstalling languages -------------------------------------
-
-  isInstalling: ->
-    @installing
-
-  installLanguage: (configFilePath) ->
-    @installing = true
-    @emitter.emit('did-start-installing')
-
-    # step 1 (validating configuration file)
-    @beginInstallationStep
-      message: 'Validating configuration file...'
-      progress: 0
-    @validateConfigurationFile(configFilePath)
-
-    configDirPath = path.dirname(configFilePath)
-    config = CSON.readFileSync(configFilePath)
-    grammarNamePattern = languageUtils.GRAMMAR_NAME_PATTERN
-    grammarName = grammarNamePattern.replace(/<languageName>/,config.name)
-
-    # step 2 (creating language directory)
-    @beginInstallationStep
-      message: 'Creating language directory...'
-      progress: 13
-    languageNameFormatted = config.name.replace(/\s+/g,'-').toLowerCase()
-    languageDirPath = path.join(@languagesDirPath,languageNameFormatted)
-    languageGrammarsDirPath = path.join(languageDirPath,'grammars')
-    try
-      fs.mkdirSync(languageDirPath)
-      fs.mkdirSync(languageGrammarsDirPath)
-    catch error
-      @emitter.emit('did-generate-installation-error',{message: "Could not create language directory due to the following error: #{error}"})
-      @emitter.emit('did-stop-installing',{success: false})
-      return
-
-    configCopy = {}
-    configCopy.name = config.name
-    configCopy.scopeName = "levels.source.#{languageNameFormatted}"
-
-    # step 3 (writing language levels)
-    @beginInstallationStep
-      message: 'Writing language levels...'
-      progress: 26
-    configCopy.levels = []
-    for levelConfig in config.levels
-      levelConfigCopy = {}
-      levelConfigCopy.name = levelConfig.name
-      levelConfigCopy.description = levelConfig.description
-      if (grammarPath = levelConfig.grammar)?
-        levelNameFormatted = levelConfig.name.replace(/\s+/g,'-').toLowerCase()
-        levelConfigCopy.grammar = "grammars/#{levelNameFormatted}.cson"
-        # copy level grammar to directory
-        unless path.isAbsolute(grammarPath)
-          grammarPath = path.join(configDirPath,grammarPath)
-        grammar = CSON.readFileSync(grammarPath)
-        grammarCopy = grammar
-        delete grammarCopy.name
-        delete grammarCopy.fileTypes
-        delete grammarCopy.firstLineMatch
-        grammarCopy.scopeName = configCopy.scopeName
-        grammarCopyPath = path.join(languageDirPath,levelConfigCopy.grammar)
-        CSON.writeFileSync(grammarCopyPath,grammarCopy)
-      configCopy.levels.push(levelConfigCopy)
-
-    # step 4 (writing default grammar)
-    @beginInstallationStep
-      message: 'Writing default grammar...'
-      progress: 39
-    if (defaultGrammarPath = config.defaultGrammar)?
-      configCopy.defaultGrammar = 'grammars/default.cson'
-      # write default grammar to directory
-      unless path.isAbsolute(defaultGrammarPath)
-        defaultGrammarPath = path.join(configDirPath,defaultGrammarPath)
-      defaultGrammar = CSON.readFileSync(defaultGrammarPath)
-      defaultGrammarCopy = defaultGrammar
-      delete defaultGrammarCopy.name
-      delete defaultGrammarCopy.fileTypes
-      delete defaultGrammarCopy.firstLineMatch
-      defaultGrammarCopy.scopeName = configCopy.scopeName
-      defaultGrammarCopyPath = \
-        path.join(languageDirPath,configCopy.defaultGrammar)
-      CSON.writeFileSync(defaultGrammarCopyPath,defaultGrammarCopy)
-
-    configCopy.levelCodeFileTypes = config.levelCodeFileTypes
-    configCopy.objectCodeFileType = config.objectCodeFileType
-    configCopy.lineCommentPattern = config.lineCommentPattern
-
-    # step 5 (copying executable)
-    @beginInstallationStep
-      message: 'Copying executable...'
-      progress: 52
-    configCopy.executable = 'run'
-    configCopy.executable += '.exe' if process.platform is 'win32'
-    executablePath = config.executable
-    unless path.isAbsolute(executablePath)
-      executablePath = path.join(configDirPath,executablePath)
-    executableCopyPath = path.join(languageDirPath,configCopy.executable)
-    readStream = fs.createReadStream(executablePath)
-    writeStream = fs.createWriteStream(executableCopyPath)
-    readStream.pipe(writeStream)
-    writeStream.on 'finish', =>
-      fs.chmodSync(executableCopyPath,'755')
-
-      configCopy.interpreterCmdPattern = config.interpreterCmdPattern
-      configCopy.compilerCmdPattern = config.compilerCmdPattern
-      configCopy.executionCmdPattern = config.executionCmdPattern
-      configCopy.installationDate = moment().format(languageUtils.INSTALLATION_DATE_FORMAT)
-
-      # step 6 (writing configuration file)
-      @beginInstallationStep
-        message: 'Writing configuration file...'
-        progress: 65
-      configCopyFilePath = path.join(languageDirPath,'config.json')
-      CSON.writeFileSync(configCopyFilePath,configCopy)
-
-      # step 7 (writing dummy grammar)
-      @beginInstallationStep
-        message: 'Writing dummy grammar...'
-        progress: 78
-      dummyGrammar =
-        name: grammarName
-        scopeName: configCopy.scopeName
-        fileTypes: configCopy.levelCodeFileTypes
-      grammarsDirPath = path.join(path.dirname(__dirname),'grammars')
-      dummyGrammarPath = \
-        path.join(grammarsDirPath,"#{languageNameFormatted}.cson")
-      CSON.writeFileSync(dummyGrammarPath,dummyGrammar)
-
-      # step 8 (loading language to registry)
-      @beginInstallationStep
-        message: 'Loading language registry...'
-        progress: 91
-      language = @loadLanguage(configCopyFilePath)
-      atom.grammars.loadGrammarSync(dummyGrammarPath)
-
-      @installing = false
-      @emitter.emit('did-stop-installing',{language,success: true})
-
-  beginInstallationStep: (step) ->
-    @emitter.emit('did-begin-installation-step',step)
-
-  isUninstalling: ->
-    @uninstalling
-
-  uninstallLanguage: (language) ->
-    @uninstalling = true
-    @emitter.emit('did-start-uninstalling',language)
-
-    # remove dummy grammar
-    atom.grammars.removeGrammarForScopeName(language.getScopeName())
-    languageName = language.getName()
-    languageNameFormatted = languageName.replace(/\s+/g,'-').toLowerCase()
-    grammarsDirPath = path.join(path.dirname(__dirname),'grammars')
-    dummyGrammarPath = \
-      path.join(grammarsDirPath,"#{languageNameFormatted}.cson")
-    fs.unlinkSync(dummyGrammarPath)
-
-    # remove language directory recursively
-    languageDirPath = path.join(@languagesDirPath,languageNameFormatted)
-    rmdirRecursively = (dirPath) ->
-      for filename in fs.readdirSync(dirPath)
-        filePath = path.join(dirPath,filename)
-        if fs.statSync(filePath).isDirectory()
-          rmdirRecursively(filePath)
-        else
-          fs.unlinkSync(filePath)
-      fs.rmdirSync(dirPath)
-    rmdirRecursively(languageDirPath)
-
-    # remove the language from the registry
-    @removeLanguage(language)
-
-    @uninstalling = false
-    @emitter.emit('did-stop-uninstalling',{language,success: true})
 
   ## Validation ----------------------------------------------------------------
 

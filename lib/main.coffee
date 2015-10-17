@@ -1,4 +1,4 @@
-languageManager   = require('./language-manager').getInstance()
+languageRegistry  = require('./language-manager').getInstance()
 workspaceManager  = require('./workspace-manager').getInstance()
 
 notificationUtils = require('./notification-utils')
@@ -9,12 +9,6 @@ terminalUtils     = require('./terminal-utils')
 module.exports =
 
   config:
-    # NOTE this is commented out because (for whatever reason) nested options
-    # sometimes do not appear in the preferences pane
-    # workspaceSettings:
-    #   type: 'object'
-    #   properties:
-    # -----------------------------------------------------------------------
     whenToWriteFileHeader:
       title: 'When To Write The Language Information File Header'
       description:
@@ -24,11 +18,6 @@ module.exports =
       type: 'string'
       default: 'before saving the buffer'
       enum: ['before saving the buffer','after setting the level']
-    # NOTE see above
-    # terminalSettings:
-    #   type: 'object'
-    #   properties:
-    # --------------
     defaultTerminalIsHidden:
       title: 'Initially Hide The Terminal'
       description:
@@ -52,16 +41,10 @@ module.exports =
       default: terminalUtils.DEFAULT_FONT_SIZE
       minimum: terminalUtils.MIN_FONT_SIZE
       maximum: terminalUtils.MAX_FONT_SIZE
-    # NOTE see above
-    # notificationSettings:
-    #   type: 'object'
-    #   properties:
-    # --------------
     showAllInfos:
       title: 'Show All Info Notifications'
-      description: """
-        If disabled, only important info notifications will be displayed.
-      """
+      description:
+        "If disabled, only important info notifications will be displayed."
       type: 'boolean'
       default: notificationUtils.DEFAULT_SHOW_ALL_INFOS
     showAllSuccesses:
@@ -84,8 +67,6 @@ module.exports =
       default: notificationUtils.DEFAULT_SHOW_ALL_ERRORS
 
   activate: (state) ->
-    # languageManager.loadInstalledLanguages()
-
     workspaceManager.setUpWorkspace(state)
     workspaceManager.activateEventHandlers()
     workspaceManager.activateCommandHandlers()
@@ -99,11 +80,10 @@ module.exports =
 
   provideLevels: ->
     languageRegistry:
-      addLanguage: languageManager.addLanguage.bind(languageManager)
-      readLanguage: languageManager.readLanguage.bind(languageManager)
-      loadLanguage: languageManager.loadLanguage.bind(languageManager)
-      removeLanguage: languageManager.removeLanguage.bind(languageManager)
-      removeLanguages: languageManager.removeLanguages.bind(languageManager)
+      addLanguage: languageRegistry.addLanguage.bind(languageRegistry)
+      readLanguage: languageRegistry.readLanguage.bind(languageRegistry)
+      loadLanguage: languageRegistry.loadLanguage.bind(languageRegistry)
+      removeLanguage: languageRegistry.removeLanguage.bind(languageRegistry)
 
   ## Consumed services ---------------------------------------------------------
 

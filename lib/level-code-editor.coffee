@@ -51,23 +51,17 @@ class LevelCodeEditor
       @readExecutionIssueFromTypedMessage(typedMessage)
 
   destroy: ->
-    @removeExecutionIssues()
+    # dispose subscriptios
     @terminalSubscrs.dispose()
     @bufferSubscr.dispose()
-    @terminal.release()
-    @emitter.emit('did-destroy')
 
-    # TODO stop execution here and display a proper info notification as soon as
-    # execution can be stopped programmatically (see execution-manager.coffee)
-    if @isExecuting()
-      message =
-        'You just destroyed a level code editor while it was executing. However,
-        the execution process is still running and now can only be killed
-        manually.\n \nThis will be fixed in a future release.'
-      notificationUtils.addWarning message,
-        head: 'Attention! Execution is still running!'
-        important: true
-    # --------------------------------------------------------------------------
+    # TODO maybe display a notification here?
+    @stopExecution()
+    # ---------------------------------------
+    @removeExecutionIssues()
+    @terminal.release()
+
+    @emitter.emit('did-destroy')
 
   ## Event subscription --------------------------------------------------------
 

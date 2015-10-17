@@ -39,6 +39,7 @@ class ExecutionManager
     # build command
     cmd = [
       "#{runPath}"
+      '-l',"#{@language.getConfigurationFilePath()}"
       '-m',"#{executionMode}"
       "#{@level.getNumber()}"
       "#{filePath}"
