@@ -1,7 +1,7 @@
 {CompositeDisposable} = require('atom')
 path                  = require('path')
 
-languageRegistry      = require('./language-manager').getInstance()
+languageRegistry      = require('./language-registry').getInstance()
 workspace             = require('./workspace').getInstance()
 
 notificationUtils     = require('./notification-utils')
@@ -144,18 +144,22 @@ class WorkspaceManager
   # was fired due to a level change (in this case `oldGrammarName` and the name
   # of `newGrammar` are equal).
   handleDidChangeGrammarOfTextEditor: (textEditor,oldGrammarName,newGrammar) ->
+
     # temporarily deactivate this event handler to prevent it from being invoked
-    # again for grammar changes caused by itself
+    # again for grammar changes during its execution
     @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
 
-    unless newGrammar.name is oldGrammarName
-      language = languageRegistry.getLanguageForGrammar(newGrammar)
+    # test if the new grammar is a Levels grammar (`language` will be
+    # `undefined` otherwise)
+    language = languageRegistry.getLanguageForGrammar(newGrammar)
+
+    if newGrammar.name isnt oldGrammarName
       if workspace.isLevelCodeEditor(textEditor)
-        levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
         # if the text editor is part of the Levels workspace and the new grammar
         # is another Levels (dummy) grammar, we just update the level code
         # editor's language, otherwise, we destroy the level code editor and
         # exit the Levels workspace if necessary
+        levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
         if language?
           levelCodeEditor.setLanguage(language)
         else
@@ -174,19 +178,15 @@ class WorkspaceManager
           if textEditor is atom.workspace.getActiveTextEditor()
             workspace.setActiveLevelCodeEditor(levelCodeEditor)
     else
-      # if the grammar names are equal it is assumed that the text editor is
-      # part of the Levels workspace (which is not very safe, because, in fact,
-      # choosing the current grammar again via the grammar selector does not
-      # fire the event, but we don't know if other packages can perform such
-      # grammar changes) and that the grammar change was caused by a level
-      # change (then nothing happens) or by Atom after saving the buffer to a
-      # path with a file extension that is associated with the current language
-      # (in the latter case Atom chooses the dummy grammar from the grammar
-      # registry, which is why we have to restore the level grammar here)
-      # TODO choose a more save approach here for this
-      if path.basename(newGrammar.path) is 'dummy.cson'
+      # if the grammar names are equal and both grammars are Levels grammars,
+      # the text editor is already part of the Levels workspace and the grammar
+      # change was either caused by a level change (then nothing happens) or by
+      # Atom after saving the buffer to a path with a file extension that is
+      # associated with the current language (in the latter case Atom chooses
+      # the dummy grammar from the grammar registry, which is why we have to
+      # restore the level grammar here)
+      if language? and path.basename(newGrammar.path) is 'dummy.cson'
         workspace.getLevelCodeEditorForId(textEditor.id).restore()
-      # ----------------------------------------------
 
     # reactivate the event handler
     @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
@@ -194,6 +194,9 @@ class WorkspaceManager
         @handleDidChangeGrammarOfTextEditor(\
           textEditor,newGrammar.name,grammar)
 
+  # The handler to be invoked when a text editor was destroyed in the Atom
+  # workspace. Also destroys the corresponding level code editor if that text
+  # editor was part of the Levels workspace.
   handleDidDestroyTextEditor: (textEditor) ->
     if workspace.isLevelCodeEditor(textEditor)
       levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)

@@ -1,4 +1,4 @@
-languageRegistry  = require('./language-manager').getInstance()
+languageRegistry  = require('./language-registry').getInstance()
 workspaceManager  = require('./workspace-manager').getInstance()
 
 notificationUtils = require('./notification-utils')

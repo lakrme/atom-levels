@@ -11,7 +11,7 @@ Level         = require('./level')
 
 # ------------------------------------------------------------------------------
 
-class LanguageManager
+class LanguageRegistry
 
   ## Construction --------------------------------------------------------------
 
@@ -207,11 +207,11 @@ class LanguageManager
 # ------------------------------------------------------------------------------
 
 module.exports =
-class LanguageManagerProvider
+class LanguageRegistryProvider
 
   instance = null
 
   @getInstance: ->
-    instance ?= new LanguageManager
+    instance ?= new LanguageRegistry
 
 # ------------------------------------------------------------------------------
