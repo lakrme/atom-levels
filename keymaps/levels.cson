@@ -1,6 +1,3 @@
-'atom-workspace':
-  'ctrl-alt-m': 'levels:toggle-language-manager'
-
 '.levels-view, atom-text-editor[data-grammar~=levels]':
   'ctrl-alt-l': 'levels:toggle-level-select'
   'ctrl-alt-t': 'levels:toggle-terminal'
