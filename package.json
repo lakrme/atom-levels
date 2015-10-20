@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "atom-space-pen-views": "^2.0.3",
-    "moment": "^2.10.6",
     "season": "^5.2.0",
     "underscore-plus": "^1.6.6"
   }
