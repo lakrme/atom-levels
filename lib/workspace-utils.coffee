@@ -21,7 +21,7 @@ module.exports =
     # TODO toggle lines comments from grammar?
     if (lineCommentPattern = language.getLineCommentPattern())?
       fileHeader = lineCommentPattern.replace(/<commentText>/,fileHeader)
-    textEditor.getBuffer().insert(new Point(0,0),"#{fileHeader}\n")
+      textEditor.getBuffer().insert(new Point(0,0),"#{fileHeader}\n")
 
   deleteLanguageInformationFileHeader: (textEditor) ->
     textBuffer = textEditor.getBuffer()
