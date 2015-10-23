@@ -65,20 +65,60 @@ class LevelCodeEditor
 
   ## Event subscription --------------------------------------------------------
 
+  # Public: Invoke the given callback with the current language and all future
+  # language changes of this level code editor.
+  #
+  # * `callback` {Function} to be called with the current language and all
+  #   future language changes.
+  #   * `event` An {Object} with the following keys:
+  #     * `language` The new {Language} of the level code editor.
+  #     * `level` The new {Level} of the level code editor.
+  #
+  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
   observeLanguage: (callback) ->
     callback({language: @language,level: @level})
     @onDidChangeLanguage(callback)
 
+  # Public: Invoke the given callback when the language is changed for this
+  # level code editor.
+  #
+  # * `callback` {Function} to be called when the language is changed.
+  #   * `event` An {Object} with the following keys:
+  #     * `language` The new {Language} of the level code editor.
+  #     * `level` The new {Level} of the level code editor.
+  #
+  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
   onDidChangeLanguage: (callback) ->
     @emitter.on('did-change-language',callback)
 
+  # Public: Invoke the given callback with the current level and all future
+  # level changes of this level code editor.
+  #
+  # * `callback` {Function} to be called with the current level and all future
+  #   level changes.
+  #   * `level` The new {Level} of the level code editor.
+  #
+  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
   observeLevel: (callback) ->
     callback(@level)
     @onDidChangeLevel(callback)
 
+  # Public: Invoke the given callback when the level is changed for this level
+  # code editor.
+  #
+  # * `callback` {Function} to be called when the level is changed.
+  #   * `level` The new {Level} of the level code editor.
+  #
+  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
   onDidChangeLevel: (callback) ->
     @emitter.on('did-change-level',callback)
 
+  # Public: Invoke the given callback when the level code editor is destroyed.
+  #
+  # * `callback` {Function} to be called when the level code editor is
+  #   destroyed.
+  #
+  # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
   onDidDestroy: (callback) ->
     @emitter.on('did-destroy',callback)
 

@@ -1,4 +1,6 @@
 {Emitter} = require('atom')
+path      = require('path')
+CSON      = require('season')
 _         = require('underscore-plus')
 
 # ------------------------------------------------------------------------------
@@ -31,14 +33,17 @@ class Language
   getName: ->
     @properties.name
 
-  getInstallationDate: ->
-    @properties.installationDate
-
   getLastActiveLevel: ->
     @properties.lastActiveLevel
 
+  getDummyGrammar: ->
+    @properties.dummyGrammar
+
   getDefaultGrammar: ->
     @properties.defaultGrammar
+
+  getGrammarName: ->
+    @properties.grammarName
 
   getScopeName: ->
     @properties.scopeName
@@ -90,6 +95,18 @@ class Language
   setLastActiveLevel: (level) ->
     @set({newProperties: {lastActiveLevel: level}})
 
+  setDummyGrammar: (dummyGrammar) ->
+    @properties.dummyGrammar = dummyGrammar
+
+  setLevelCodeFileTypes: (levelCodeFileTypes) ->
+    @set({newProperties: {levelCodeFileTypes}})
+
+  setObjectCodeFileType: (objectCodeFileType) ->
+    @set({newProperties: {objectCodeFileType}})
+
+  setLineCommentPattern: (lineCommentPattern) ->
+    @set({newProperties: {lineCommentPattern}})
+
   set: (changes) ->
     # apply language property changes
     if (newProperties = changes?.newProperties)?
@@ -120,7 +137,46 @@ class Language
 
     # emit event if changes were made
     if propertyChanges? or levelChangesByLevelName?
-      @emitter.emit('did-change',{propertyChanges,levelChangesByLevelName})
+      changes = {propertyChanges,levelChangesByLevelName}
+      @emitter.emit('did-change',changes)
+      @applyLanguageChanges(@,changes)
+    undefined
+
+  writeLanguageToConfigurationFile: (language,configFilePath) ->
+    defaultGrammarPath = language.getDefaultGrammar().path
+    configDirPath = path.dirname(configFilePath)
+
+    config = {}
+    config.name = language.getName()
+
+    config.levels =
+      for level in language.getLevels()
+        name = level.getName()
+        description = level.getDescription()
+        grammar = undefined
+        grammarPath = level.getGrammar().path
+        unless grammarPath is defaultGrammarPath
+          grammar = path.relative(configDirPath,grammarPath)
+        {name,description,grammar}
+    config.lastActiveLevel = language.getLastActiveLevel()?.getName()
+    if defaultGrammarPath?
+      config.defaultGrammar = path.relative(configDirPath,defaultGrammarPath)
+
+    config.levelCodeFileTypes = language.getLevelCodeFileTypes()
+    config.objectCodeFileType = language.getObjectCodeFileType()
+    config.lineCommentPattern = language.getLineCommentPattern()
+    config.executionMode = language.getExecutionMode()
+    config.interpreterCmdPattern = language.getInterpreterCommandPattern()
+    config.compilerCmdPattern = language.getCompilerCommandPattern()
+    config.executionCmdPattern = language.getExecutionCommandPattern()
+
+    CSON.writeFileSync(configFilePath,config)
+    undefined
+
+  applyLanguageChanges: (language,changes) ->
+    # TODO do something with the changes
+    configFilePath = language.getConfigurationFilePath()
+    @writeLanguageToConfigurationFile(language,configFilePath)
     undefined
 
   ## Managing language levels --------------------------------------------------
@@ -147,8 +203,6 @@ class Language
   ## More interface methods ----------------------------------------------------
 
   hasLevel: (level) ->
-    languageName = level.getLanguage().getName()
-    levelName = level.getName()
-    languageName is @getName() and @getLevelForName(levelName)?
+    level.getLanguage() is @ and @getLevelForName(level.getName())?
 
 # ------------------------------------------------------------------------------

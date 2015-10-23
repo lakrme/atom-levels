@@ -80,10 +80,28 @@ module.exports =
 
   provideLevels: ->
     languageRegistry:
-      addLanguage: languageRegistry.addLanguage.bind(languageRegistry)
-      readLanguage: languageRegistry.readLanguage.bind(languageRegistry)
-      loadLanguage: languageRegistry.loadLanguage.bind(languageRegistry)
-      removeLanguage: languageRegistry.removeLanguage.bind(languageRegistry)
+      observeLanguages:
+        languageRegistry.observeLanguages.bind(languageRegistry)
+      onDidAddLanguage:
+        languageRegistry.onDidAddLanguage.bind(languageRegistry)
+      onDidRemoveLanguage:
+        languageRegistry.onDidRemoveLanguage.bind(languageRegistry)
+      addLanguage:
+        languageRegistry.addLanguage.bind(languageRegistry)
+      readLanguageSync:
+        languageRegistry.readLanguageSync.bind(languageRegistry)
+      loadLanguageSync:
+        languageRegistry.loadLanguageSync.bind(languageRegistry)
+      removeLanguage:
+        languageRegistry.removeLanguage.bind(languageRegistry)
+      getLanguageForName:
+        languageRegistry.getLanguageForName.bind(languageRegistry)
+      getLanguageForGrammar:
+        languageRegistry.getLanguageForGrammar.bind(languageRegistry)
+      getLanguages:
+        languageRegistry.getLanguages.bind(languageRegistry)
+      getLanguagesForFileType:
+        languageRegistry.getLanguagesForFileType.bind(languageRegistry)
 
   ## Consumed services ---------------------------------------------------------
 

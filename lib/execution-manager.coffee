@@ -95,7 +95,7 @@ class ExecutionManager
     # kill parent process
     try process.kill(parentPid,'SIGINT')
 
-  # NOTE stolen from Atom's BufferedNodeProcess API (Oops!)
+  # NOTE stolen from Atom's BufferedProcess API (Oops!)
   killProcessOnWin32: (parentPid) ->
     try
       wmicProcess = child_process.spawn 'wmic', [

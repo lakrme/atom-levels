@@ -25,6 +25,7 @@ class WorkspaceManager
     @viewProviders = new CompositeDisposable
     @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
       terminalView = new TerminalView(terminal)
+
       # initialize the terminal
       terminal.newLine()
       terminal.writeInfo('Welcome to the Levels terminal!')
@@ -34,13 +35,20 @@ class WorkspaceManager
     @levelSelectView = new LevelSelectView
     @terminalPanelView = new TerminalPanelView
 
-  # Destroys the Levels workspace view components (invoked on deactivation).
+  # Destroys the Levels workspace (view) components (invoked on deactivation).
   cleanUpWorkspace: ->
     @viewProviders.dispose()
     @levelStatusView.destroy()
     @levelSelectView.destroy()
     @terminalPanelView.destroy()
     @levelStatusTile.destroy()
+
+    # destroy Levels workspace
+    for language in languageRegistry.getLanguages()
+      languageRegistry.removeLanguage(language)
+    # for levelCodeEditor in workspace.getLevelCodeEditors()
+    #   workspace.destroyLevelCodeEditor(levelCodeEditor)
+    # workspace.unsetActiveLevelCodeEditor()
 
   activateEventHandlers: ->
     @subscribeToAtomWorkspace()
@@ -121,11 +129,9 @@ class WorkspaceManager
   ## Text editor subscriptions -------------------------------------------------
 
   subscribeToTextEditor: (textEditor) ->
-    currentGrammarName = textEditor.getGrammar().name
     @textEditorSubscrsById[textEditor.id] =
       didChangeGrammarSubscr: textEditor.onDidChangeGrammar (grammar) =>
-        @handleDidChangeGrammarOfTextEditor(\
-          textEditor,currentGrammarName,grammar)
+        @handleDidChangeGrammarOfTextEditor(textEditor,grammar)
       didDestroySubscr: textEditor.onDidDestroy =>
         @handleDidDestroyTextEditor(textEditor)
 
@@ -139,60 +145,51 @@ class WorkspaceManager
   # the Atom workspace. Determines if a level code editor must be created or
   # destroyed for the given text editor based on the grammar change and updates
   # the Levels workspace if necessary.
-  #
-  # The parameter `oldGrammarName` is used to check if the grammar change event
-  # was fired due to a level change (in this case `oldGrammarName` and the name
-  # of `newGrammar` are equal).
-  handleDidChangeGrammarOfTextEditor: (textEditor,oldGrammarName,newGrammar) ->
-
-    # temporarily deactivate this event handler to prevent it from being invoked
-    # again for grammar changes during its execution
+  handleDidChangeGrammarOfTextEditor: (textEditor,grammar) ->
     @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr.dispose()
+    language = languageRegistry.getLanguageForGrammar(grammar)
 
-    # test if the new grammar is a Levels grammar (`language` will be
-    # `undefined` otherwise)
-    language = languageRegistry.getLanguageForGrammar(newGrammar)
-
-    if newGrammar.name isnt oldGrammarName
-      if workspace.isLevelCodeEditor(textEditor)
+    if workspace.isLevelCodeEditor(textEditor)
+      levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
+      currentLanguage = levelCodeEditor.getLanguage()
+      switch
+        # if the text editor is part of the Levels workspace and the new grammar
+        # grammar is the dummy grammar of the current language, the grammar
+        # change was either caused by a level change (then nothing happens) or
+        # by Atom after saving the buffer to a path with a file extension that
+        # is associated with the current language (in the latter case Atom
+        # chooses the dummy grammar from the grammar registry, which is why we
+        # have to restore the level grammar here)
+        when language? and language is currentLanguage
+          if grammar is language.getDummyGrammar()
+            levelCodeEditor.restore()
         # if the text editor is part of the Levels workspace and the new grammar
         # is another Levels (dummy) grammar, we just update the level code
-        # editor's language, otherwise, we destroy the level code editor and
-        # exit the Levels workspace if necessary
-        levelCodeEditor = workspace.getLevelCodeEditorForTextEditor(textEditor)
-        if language?
+        # editor's language
+        when language? and language isnt currentLanguage
           levelCodeEditor.setLanguage(language)
-        else
+        # if the text editor is part of the Levels workspace and the new grammar
+        # is not a Levels (dummy) grammar, we destroy the level code editor and
+        # exit the Levels workspace if necessary
+        when not language?
           workspace.destroyLevelCodeEditor(levelCodeEditor)
           if textEditor is atom.workspace.getActiveTextEditor()
             workspace.unsetActiveLevelCodeEditor()
-      else
-        # if the text editor isn't part of the Levels workspace yet, only create
-        # a level code editor if the new grammar is the language's dummy grammar
-        # (which is the case when the user changes the grammar manually, for
-        # instance), otherwise the grammar change happened while creating a new
-        # level code editor for this text editor (do nothing in this case)
-        if language? and path.basename(newGrammar.path) is 'dummy.cson'
-          levelCodeEditor = new LevelCodeEditor({textEditor,language})
-          workspace.addLevelCodeEditor(levelCodeEditor)
-          if textEditor is atom.workspace.getActiveTextEditor()
-            workspace.setActiveLevelCodeEditor(levelCodeEditor)
     else
-      # if the grammar names are equal and both grammars are Levels grammars,
-      # the text editor is already part of the Levels workspace and the grammar
-      # change was either caused by a level change (then nothing happens) or by
-      # Atom after saving the buffer to a path with a file extension that is
-      # associated with the current language (in the latter case Atom chooses
-      # the dummy grammar from the grammar registry, which is why we have to
-      # restore the level grammar here)
-      if language? and path.basename(newGrammar.path) is 'dummy.cson'
-        workspace.getLevelCodeEditorForId(textEditor.id).restore()
+      # if the text editor isn't part of the Levels workspace yet, only create
+      # a level code editor if the new grammar is the language's dummy grammar
+      # (which is the case when the user changes the grammar manually, for
+      # instance), otherwise the grammar change happened while creating a new
+      # level code editor for this text editor (do nothing in this case)
+      if language? and grammar is language.getDummyGrammar()
+        levelCodeEditor = new LevelCodeEditor({textEditor,language})
+        workspace.addLevelCodeEditor(levelCodeEditor)
+        if textEditor is atom.workspace.getActiveTextEditor()
+          workspace.setActiveLevelCodeEditor(levelCodeEditor)
 
-    # reactivate the event handler
     @textEditorSubscrsById[textEditor.id].didChangeGrammarSubscr = \
       textEditor.onDidChangeGrammar (grammar) =>
-        @handleDidChangeGrammarOfTextEditor(\
-          textEditor,newGrammar.name,grammar)
+        @handleDidChangeGrammarOfTextEditor(textEditor,grammar)
 
   # The handler to be invoked when a text editor was destroyed in the Atom
   # workspace. Also destroys the corresponding level code editor if that text
@@ -207,7 +204,7 @@ class WorkspaceManager
 
   subscribeToLanguageRegistry: ->
     @languageRegistrySubscrs = new CompositeDisposable
-    @languageRegistrySubscrs.add languageRegistry.onDidAddLanguage \
+    @languageRegistrySubscrs.add languageRegistry.observeLanguages \
       (addedLanguage) =>
         @handleDidAddLanguageToLanguageRegistry(addedLanguage)
     @languageRegistrySubscrs.add languageRegistry.onDidRemoveLanguage \
@@ -281,8 +278,8 @@ class WorkspaceManager
           workspace.unsetActiveLevelCodeEditor()
 
         # set the text editor's grammar to the default grammar
-        nullGrammar = atom.grammars.grammarForScopeName('text.plain')
-        textEditor.setGrammar(nullGrammar)
+        # nullGrammar = atom.grammars.grammarForScopeName('text.plain')
+        # textEditor.setGrammar(nullGrammar)
 
   ## Command handlers ----------------------------------------------------------
 
