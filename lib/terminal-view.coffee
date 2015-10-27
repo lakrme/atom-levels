@@ -107,6 +107,12 @@ class TerminalView extends View
       @moveCursorAbsolute(@activeLineIndex,0)
       @scrollToBottom()
 
+      configKeyPath = 'levels.terminalSettings.terminalContentLimit'
+      contentLimit = atom.config.get(configKeyPath)
+      if contentLimit > 0 and contentLimit <= @activeLineIndex
+        # @removeLines(1,(@activeLineIndex-contentLimit)+1)
+        @terminal.clear()
+
   updateOnDidUpdateActiveLine: ({input,output,inputCursorPos}) ->
     unless @waitingForTypedMessage
       @activeLine.empty()
@@ -120,6 +126,11 @@ class TerminalView extends View
     @append(@activeLine)
     @moveCursorRelative(-@activeLineIndex,0)
     @activeLineIndex = 0
+
+  removeLines: (index,deleteCount) ->
+    @children().slice(index,index+deleteCount).remove()
+    @moveCursorRelative(-deleteCount,0)
+    @activeLineIndex -= deleteCount
 
   ## Processing typed messages -------------------------------------------------
 
@@ -137,7 +148,7 @@ class TerminalView extends View
     # process execution warnings and errors
     id = typedMessage.id
     type = typedMessage.type
-    if (type is 'warning' or type is 'error') and typedMessage.data.source?
+    if (type is 'warning' or type is 'error') and typedMessage.data?.source?
       # create issue link element
       startTag = ''
       endTag = ''

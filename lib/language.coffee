@@ -70,17 +70,6 @@ class Language
       return @properties.executionMode = executionModes[0]
     undefined
 
-  getExecutionModes: ->
-    executionModes = []
-    interpreterCmdPattern = @getInterpreterCommandPattern()
-    compilerCmdPattern = @getCompilerCommandPattern()
-    executionCmdPattern = @getExecutionCommandPattern()
-    if interpreterCmdPattern?
-      executionModes.push('interpreted')
-    if compilerCmdPattern? and executionCmdPattern?
-      executionModes.push('compiled')
-    executionModes
-
   getInterpreterCommandPattern: ->
     @properties.interpreterCmdPattern
 

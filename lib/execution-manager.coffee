@@ -1,8 +1,7 @@
+{Disposable}      = require('atom')
 child_process     = require('child_process')
 path              = require('path')
 _                 = require('underscore-plus')
-
-notificationUtils = require('./notification-utils')
 
 # ------------------------------------------------------------------------------
 
@@ -16,7 +15,7 @@ class ExecutionManager
   ## Level code execution ------------------------------------------------------
 
   isExecuting: ->
-    @process?
+    @executing
 
   startExecution: ->
     @textEditor = @levelCodeEditor.getTextEditor()
@@ -34,11 +33,17 @@ class ExecutionManager
     unless (filePath = @textEditor.getPath())?
       throw {name: 'BufferNotSavedError'}
 
+    @executing = true
+    @processExited = false
+    @processClosed = false
+
+    configKeyPath = 'levels.workspaceSettings.clearTerminalOnExecution'
+    @terminal.clear() if atom.config.get(configKeyPath)
     @terminal.writeLn('Running level code...')
 
     # build command
     cmd = [
-      "#{runPath}"
+      runPath
       '-l',"#{@language.getConfigurationFilePath()}"
       '-m',"#{executionMode}"
       "#{@level.getNumber()}"
@@ -46,24 +51,18 @@ class ExecutionManager
       '2>&1'
     ].join(' ')
 
-    # spawn the child process
+    # spawn the child process and set up handlers
     @process = child_process.exec cmd,
       cwd: path.dirname(runPath)
       env: process.env
-
-    # set up process handle subscriptions
     @process.stdout.on 'data', (data) =>
-      @terminal.write(data.toString())
+      @handleProcessData(data)
     @terminalSubscr = @terminal.onDidEnterInput (input) =>
       @process.stdin.write("#{input}\n")
-    @process.on 'close', =>
-      @process.stdin.end()
-      @process = null
-      @terminalSubscr.dispose()
-      @terminalSubscr = null
-      @terminal.exitScope()
-      @terminal.didStopExecution()
-      @levelCodeEditor.didStopExecution()
+    @process.on 'exit', (code,signal) =>
+      @handleProcessExit(code,signal)
+    @process.on 'close', (code,signal) =>
+      @handleProcessClose(code,signal)
 
     # notify terminal and level code editor
     @terminal.enterScope()
@@ -72,10 +71,69 @@ class ExecutionManager
 
   stopExecution: ->
     if @isExecuting()
-      switch process.platform
-        when 'darwin' then @killProcessOnDarwinAndLinux(@process.pid)
-        when 'linux'  then @killProcessOnDarwinAndLinux(@process.pid)
-        when 'win32'  then @killProcessOnWin32(@process.pid)
+      if @processExited
+        @dataWriter?.dispose()
+        @executing = false
+        @terminalSubscr.dispose()
+        @terminal.exitScope()
+        @terminal.didStopExecution()
+        @levelCodeEditor.didStopExecution()
+      else
+        switch process.platform
+          when 'darwin' then @killProcessOnDarwinAndLinux(@process.pid)
+          when 'linux'  then @killProcessOnDarwinAndLinux(@process.pid)
+          when 'win32'  then @killProcessOnWin32(@process.pid)
+
+  ## Process event handling ----------------------------------------------------
+
+  handleProcessData: (data) ->
+    @process.stdout.pause()
+    lines = data.toString().split('\n')
+    console.log lines
+    @dataWriter = @writeDataLines(lines)
+
+  writeDataLines: (lines) ->
+    intervalId = setInterval =>
+      if lines.length is 1
+        lastLine = lines.shift()
+        @writeDataLine(lastLine) if lastLine
+        @dataWriter.dispose()
+        unless @process?
+          console.log 'execution stopped'
+          @terminalSubscr.dispose()
+          @terminal.exitScope()
+          @terminal.didStopExecution()
+          @executing = false
+          @levelCodeEditor.didStopExecution()
+        else
+          @process.stdout.resume()
+      else
+        @writeDataLine(lines.shift())
+        @terminal.newLine()
+    ,10
+    new Disposable(-> clearInterval(intervalId))
+
+  writeDataLine: (line) ->
+    @terminal.write(line)
+
+  handleProcessExit: (code,signal) ->
+    console.log "exit with signal #{signal}"
+    @processExited = true
+    # @dataWriter?.dispose()
+    # @stdoutTerminalPipe.dispose()
+    # data = @process.stdout.read()
+    # console.log data?.toString()
+    # # while not @closed
+    # #   console.log 'here'
+    # #   data = @process.stdout.read(64)
+    # #   console.log data.toString() if data?
+    # #   @terminal.write(data.toString()) if data?
+    # @destroyReadableStream(@process.stdout) if signal is 'SIGINT'
+
+  handleProcessClose: (code,signal) ->
+    @process.stdin.end()
+    @process = null
+    console.log 'process closed'
 
   ## Killing processes ---------------------------------------------------------
 
@@ -117,7 +175,7 @@ class ExecutionManager
         try process.kill(parentPid,'SIGINT')
     catch error
       # TODO show proper error notification here
-      console.log("Spawn error")
+      console.log("Spawn error!")
       # ----------------------------------------
 
 # ------------------------------------------------------------------------------

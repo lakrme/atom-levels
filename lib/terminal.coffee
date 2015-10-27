@@ -33,11 +33,11 @@ class Terminal
 
     # initialize terminal interface properties
     @visible = params.visible ? \
-      not atom.config.get('levels.defaultTerminalIsHidden')
+      not atom.config.get('levels.terminalSettings.defaultTerminalIsHidden')
     @size = params.size ? \
-      atom.config.get('levels.defaultTerminalSize')
+      atom.config.get('levels.terminalSettings.defaultTerminalSize')
     @fontSize = params.fontSize ? \
-      atom.config.get('levels.defaultTerminalFontSize')
+      atom.config.get('levels.terminalSettings.defaultTerminalFontSize')
 
     #initialize buffer
     @buffer = new TerminalBuffer
@@ -262,7 +262,8 @@ class Terminal
       bodyElem  = "<body>\n#{body}\n</body>\n" if body
       endTag    = "</message>\n"
       typedMessage = startTag + headElem + bodyElem + endTag
-      @write(typedMessage)
+      @buffer.newLine() if @buffer.getActiveLineOutput()
+      @buffer.write(typedMessage)
 
   writeSubtle: (message) ->
     @writeTypedMessage({type: 'subtle',body: message})
@@ -276,7 +277,7 @@ class Terminal
   writeWarning: (message) ->
     @writeTypedMessage({type: 'warning',body: message})
 
-  writeError: (Message) ->
+  writeError: (message) ->
     @writeTypedMessage({type: 'error',body: message})
 
   ## Reading typed message from the output -------------------------------------

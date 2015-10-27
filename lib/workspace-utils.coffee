@@ -9,6 +9,8 @@ module.exports =
 
   ## Constants -----------------------------------------------------------------
 
+  DEFAULT_WHEN_TO_WRITE_FILE_HEADER: 'before saving the buffer'
+  DEFAULT_CLEAR_TERMINAL_ON_EXECUTION: true
   FILE_HEADER_PATTERN: 'Language: <languageName>, Level: <levelName>'
   FILE_HEADER_REG_EXP:  /Language:\s+(.+),\s+Level:\s+(.+)/
 

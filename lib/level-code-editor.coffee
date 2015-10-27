@@ -188,8 +188,8 @@ class LevelCodeEditor
   ## Writing language information to the file header ---------------------------
 
   writeLanguageInformationFileHeaderIf: (condition) ->
-    configKey = 'levels.whenToWriteFileHeader'
-    whenToWriteFileHeader = atom.config.get(configKey)
+    configKeyPath = 'levels.workspaceSettings.whenToWriteFileHeader'
+    whenToWriteFileHeader = atom.config.get(configKeyPath)
     if whenToWriteFileHeader is condition
       workspaceUtils.deleteLanguageInformationFileHeader(@textEditor)
       workspaceUtils.writeLanguageInformationFileHeader(@textEditor,\

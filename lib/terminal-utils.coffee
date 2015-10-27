@@ -10,6 +10,7 @@ module.exports =
   DEFAULT_FONT_SIZE: 12
   MIN_FONT_SIZE: 10
   MAX_FONT_SIZE: 20
+  DEFAULT_CONTENT_LIMIT: 1000
   TOPKEK:
     """
      _              _        _

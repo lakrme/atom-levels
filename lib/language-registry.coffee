@@ -161,10 +161,15 @@ class LanguageRegistry
   getLanguages: ->
     language for languageName,language of @languagesByName
 
-  # Public: Get all languages in the registry that are associated with the given
-  # file type.
+  # Public: Get the best matching languages in the registry that are associated
+  # with the given level code file type.
   #
-  # * `fileType` The file type as a {String} (e.g. `"rb"`).
+  # If there are multiple level code file types given for a language, the
+  # foremost ones in the file types array are supposed to have the highest
+  # priority. This picks the language(s) with the highest priority defined for
+  # the given file type.
+  #
+  # * `fileType` The level code file type as a {String} (e.g. `"rb"`).
   #
   # Returns an {Array} of {Language} instances.
   getLanguagesForFileType: (fileType) ->

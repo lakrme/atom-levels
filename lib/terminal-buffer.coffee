@@ -138,6 +138,12 @@ class TerminalBuffer
 
   ## Interface methods ---------------------------------------------------------
 
+  getActiveLineOutput: ->
+    if @promptIsActive then '' else @activeLineOutput
+
+  getActiveLineInput: ->
+    @activeLineInput
+
   write: (output) ->
     lines = output.split('\n')
     @addStringToOutput(lines[0])
