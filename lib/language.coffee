@@ -57,10 +57,10 @@ class Language
   getLineCommentPattern: ->
     @properties.lineCommentPattern
 
-  getConfigurationFilePath: ->
+  getConfigFilePath: ->
     @properties.configFilePath
 
-  getExecutablePath: ->
+  getRunExecPath: ->
     @properties.executablePath
 
   getExecutionMode: ->
@@ -164,7 +164,7 @@ class Language
 
   applyLanguageChanges: (language,changes) ->
     # TODO do something with the changes
-    configFilePath = language.getConfigurationFilePath()
+    configFilePath = language.getConfigFilePath()
     @writeLanguageToConfigurationFile(language,configFilePath)
     undefined
 

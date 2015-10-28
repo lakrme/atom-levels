@@ -11,6 +11,7 @@ class ExecutionManager
   ## Construction --------------------------------------------------------------
 
   constructor: (@levelCodeEditor) ->
+    @executing = false
 
   ## Level code execution ------------------------------------------------------
 
@@ -22,120 +23,109 @@ class ExecutionManager
     @language = @levelCodeEditor.getLanguage()
     @level = @levelCodeEditor.getLevel()
     @terminal = @levelCodeEditor.getTerminal()
-    runPath = @language.getExecutablePath()
 
-    if @isExecuting()
-      throw {name: 'ExecutionIsAlreadyRunningError'}
-    if @terminal.isExecuting()
-      throw {name: 'TerminalIsBusyError'}
-    unless (executionMode = @language.getExecutionMode())?
-      throw {name: 'ExecutionModeNotFoundError'}
-    unless (filePath = @textEditor.getPath())?
-      throw {name: 'BufferNotSavedError'}
-
-    @executing = true
-    @processExited = false
-    @processClosed = false
+    return if @isExecuting() or @terminal.isExecuting()
 
     configKeyPath = 'levels.workspaceSettings.clearTerminalOnExecution'
     @terminal.clear() if atom.config.get(configKeyPath)
     @terminal.writeLn('Running level code...')
 
-    # build command
+    runExecPath = @language.getRunExecPath()
+    configFilePath = @language.getConfigFilePath()
+    executionMode = @language.getExecutionMode()
+    levelNumber = @level.getNumber()
+    filePath = @textEditor.getPath()
     cmd = [
-      runPath
-      '-l',"#{@language.getConfigurationFilePath()}"
+      runExecPath
+      '-l',"#{configFilePath}"
       '-m',"#{executionMode}"
-      "#{@level.getNumber()}"
+      "#{levelNumber}"
       "#{filePath}"
       '2>&1'
     ].join(' ')
 
-    # spawn the child process and set up handlers
+    @processExited = false
+    @processClosed = false
+
+    # spawn child process and set up handlers
     @process = child_process.exec cmd,
-      cwd: path.dirname(runPath)
+      cwd: path.dirname(runExecPath)
       env: process.env
-    @process.stdout.on 'data', (data) =>
-      @handleProcessData(data)
     @terminalSubscr = @terminal.onDidEnterInput (input) =>
       @process.stdin.write("#{input}\n")
-    @process.on 'exit', (code,signal) =>
-      @handleProcessExit(code,signal)
-    @process.on 'close', (code,signal) =>
-      @handleProcessClose(code,signal)
+    @process.stdout.on('data',@handleProcessData)
+    @process.on('exit',@handleProcessExit)
+    @process.on('close',@handleProcessClose)
+    @executionStarted()
 
-    # notify terminal and level code editor
+  stopExecution: ->
+    return unless @isExecuting()
+    @process.stdout.removeListener('data',@handleProcessData)
+    @activeDataWriter?.dispose()
+    unless @processExited
+      @killProcess(@process.pid)
+    unless @processClosed
+      @process.stdout.read()
+      @process.stdout.destroy()
+    @terminal.writeLn('...')
+    @terminal.writeError('Execution stopped!')
+
+  executionStarted: ->
+    @executing = true
     @terminal.enterScope()
     @terminal.didStartExecution()
     @levelCodeEditor.didStartExecution()
 
-  stopExecution: ->
-    if @isExecuting()
-      if @processExited
-        @dataWriter?.dispose()
-        @executing = false
-        @terminalSubscr.dispose()
-        @terminal.exitScope()
-        @terminal.didStopExecution()
-        @levelCodeEditor.didStopExecution()
-      else
-        switch process.platform
-          when 'darwin' then @killProcessOnDarwinAndLinux(@process.pid)
-          when 'linux'  then @killProcessOnDarwinAndLinux(@process.pid)
-          when 'win32'  then @killProcessOnWin32(@process.pid)
+  executionStopped: ->
+    @executing = false
+    @terminal.exitScope()
+    @terminal.didStopExecution()
+    @levelCodeEditor.didStopExecution()
 
   ## Process event handling ----------------------------------------------------
 
-  handleProcessData: (data) ->
+  handleProcessData: (data) =>
     @process.stdout.pause()
     lines = data.toString().split('\n')
-    console.log lines
-    @dataWriter = @writeDataLines(lines)
+    @activeDataWriter = @writeDataLines(lines)
+
+  handleProcessExit: (code,signal) =>
+    @processExited = true
+
+  handleProcessClose: (code,signal) =>
+    @terminalSubscr.dispose()
+    @process.stdin.end()
+    @processClosed = true
+    @executionStopped() unless @activeDataWriter?
+
+  ## Writing data to the terminal ----------------------------------------------
 
   writeDataLines: (lines) ->
     intervalId = setInterval =>
       if lines.length is 1
         lastLine = lines.shift()
         @writeDataLine(lastLine) if lastLine
-        @dataWriter.dispose()
-        unless @process?
-          console.log 'execution stopped'
-          @terminalSubscr.dispose()
-          @terminal.exitScope()
-          @terminal.didStopExecution()
-          @executing = false
-          @levelCodeEditor.didStopExecution()
-        else
-          @process.stdout.resume()
+        @activeDataWriter.dispose()
+        @process.stdout.resume()
       else
         @writeDataLine(lines.shift())
         @terminal.newLine()
     ,10
-    new Disposable(-> clearInterval(intervalId))
+    new Disposable =>
+      clearInterval(intervalId)
+      @activeDataWriter = null
+      @executionStopped() if @processClosed
 
   writeDataLine: (line) ->
     @terminal.write(line)
 
-  handleProcessExit: (code,signal) ->
-    console.log "exit with signal #{signal}"
-    @processExited = true
-    # @dataWriter?.dispose()
-    # @stdoutTerminalPipe.dispose()
-    # data = @process.stdout.read()
-    # console.log data?.toString()
-    # # while not @closed
-    # #   console.log 'here'
-    # #   data = @process.stdout.read(64)
-    # #   console.log data.toString() if data?
-    # #   @terminal.write(data.toString()) if data?
-    # @destroyReadableStream(@process.stdout) if signal is 'SIGINT'
-
-  handleProcessClose: (code,signal) ->
-    @process.stdin.end()
-    @process = null
-    console.log 'process closed'
-
   ## Killing processes ---------------------------------------------------------
+
+  killProcess: (pid) ->
+    switch process.platform
+      when 'darwin' then @killProcessOnDarwinAndLinux(pid)
+      when 'linux'  then @killProcessOnDarwinAndLinux(pid)
+      when 'win32'  then @killProcessOnWin32(pid)
 
   killProcessOnDarwinAndLinux: (parentPid) ->
     # get child process IDs
@@ -153,7 +143,6 @@ class ExecutionManager
     # kill parent process
     try process.kill(parentPid,'SIGINT')
 
-  # NOTE stolen from Atom's BufferedProcess API (Oops!)
   killProcessOnWin32: (parentPid) ->
     try
       wmicProcess = child_process.spawn 'wmic', [

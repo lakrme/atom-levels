@@ -342,36 +342,11 @@ class WorkspaceManager
 
   doStartExecution: (event) ->
     if workspace.isActive()
-      try
-        activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
-        activeTerminal = activeLevelCodeEditor.getTerminal()
-        activeTerminal.show()
-        activeTerminal.focus()
-        activeLevelCodeEditor.startExecution()
-      catch error
-        switch error.name
-          when 'ExecutionIsAlreadyRunningError'
-            message =
-              'Level code execution is already running.\nTry again after program
-              termination.'
-          when 'TerminalIsBusyError'
-            message =
-              'The terminal is busy.\nThat is, another level code editor is
-              using this terminal at the moment.'
-          when 'ExecutionModeNotFoundError'
-            message =
-              'No execution mode could be found.\nPlease define either the
-              interpreter command pattern or the compiler command pattern and
-              the execution command pattern in the language configuration view.'
-          when 'BufferNotSavedError'
-            message =
-              'The text editor\'s buffer is not saved yet.\nSave your program in
-              order to be able to execute it.'
-          else
-            message = error.message
-        notificationUtils.addError message,
-          head: 'Oh no! Execution failed!'
-          important: true
+      activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
+      activeTerminal = activeLevelCodeEditor.getTerminal()
+      activeLevelCodeEditor.startExecution()
+      activeTerminal.show()
+      activeTerminal.focus()
     else
       event.abortKeyBinding()
 
