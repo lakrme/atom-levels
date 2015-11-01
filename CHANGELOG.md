@@ -10,3 +10,6 @@
 * The execution mechanism can now handle fast output from spawned child processes
 * Added some documentation
 * General bug fixing and adjustments
+
+## 0.3.1 (2015-11-01)
+* Fix a bug that caused language packages to not being able to use the Levels package ([0c76bf1](https://github.com/lakrme/atom-levels/commit/0f8b5c9b579deabbf10909fd288d5ef03edbcb2d))
