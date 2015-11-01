@@ -194,10 +194,7 @@ class LanguageRegistry
       name: config.name
       objectCodeFileType: config.objectCodeFileType
       lineCommentPattern: config.lineCommentPattern
-      executionMode: config.executionMode
-      interpreterCmdPattern: config.interpreterCmdPattern
-      compilerCmdPattern: config.compilerCmdPattern
-      executionCmdPattern: config.executionCmdPattern
+      executionCommandPatterns: config.executionCommandPatterns
       configFilePath: configFilePath
       executablePath: executablePath
 

@@ -32,15 +32,13 @@ class ExecutionManager
 
     runExecPath = @language.getRunExecPath()
     configFilePath = @language.getConfigFilePath()
-    executionMode = @language.getExecutionMode()
     levelNumber = @level.getNumber()
     filePath = @textEditor.getPath()
     cmd = [
-      runExecPath
-      '-l',"#{configFilePath}"
-      '-m',"#{executionMode}"
+      "\"#{runExecPath}\""
+      '-l',"\"#{configFilePath}\""
       "#{levelNumber}"
-      "#{filePath}"
+      "\"#{filePath}\""
       '2>&1'
     ].join(' ')
 

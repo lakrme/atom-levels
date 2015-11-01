@@ -63,21 +63,15 @@ class Language
   getRunExecPath: ->
     @properties.executablePath
 
+  # TODO remove this
   getExecutionMode: ->
-    if @properties.executionMode?
-      return @properties.executionMode
-    if (executionModes = @getExecutionModes()).length isnt 0
-      return @properties.executionMode = executionModes[0]
+    if @properties.executionCommandPatterns.length > 0
+      return "yes"
     undefined
+  # ----------------
 
-  getInterpreterCommandPattern: ->
-    @properties.interpreterCmdPattern
-
-  getCompilerCommandPattern: ->
-    @properties.compilerCmdPattern
-
-  getExecutionCommandPattern: ->
-    @properties.executionCmdPattern
+  getExecutionCommandPatterns: ->
+    @properties.executionCommandPatterns
 
   ## Setting language properties -----------------------------------------------
 
@@ -95,6 +89,9 @@ class Language
 
   setLineCommentPattern: (lineCommentPattern) ->
     @set({newProperties: {lineCommentPattern}})
+
+  setExecutionCommandPatterns: (executionCommandPatterns) ->
+    @set({newProperties: {executionCommandPatterns}})
 
   set: (changes) ->
     # apply language property changes
@@ -154,10 +151,7 @@ class Language
     config.levelCodeFileTypes = language.getLevelCodeFileTypes()
     config.objectCodeFileType = language.getObjectCodeFileType()
     config.lineCommentPattern = language.getLineCommentPattern()
-    config.executionMode = language.getExecutionMode()
-    config.interpreterCmdPattern = language.getInterpreterCommandPattern()
-    config.compilerCmdPattern = language.getCompilerCommandPattern()
-    config.executionCmdPattern = language.getExecutionCommandPattern()
+    config.executionCommandPatterns = language.getExecutionCommandPatterns()
 
     CSON.writeFileSync(configFilePath,config)
     undefined
