@@ -12,4 +12,7 @@
 * General bug fixing and adjustments
 
 ## 0.3.1 (2015-11-01)
-* Fix a bug that caused language packages to not being able to use the Levels package ([0c76bf1](https://github.com/lakrme/atom-levels/commit/0f8b5c9b579deabbf10909fd288d5ef03edbcb2d))
+* Fixed a bug that made it impossible for language packages to consume the Levels package (see [0c76bf1](https://github.com/lakrme/atom-levels/commit/0f8b5c9b579deabbf10909fd288d5ef03edbcb2d))
+
+## 0.3.2 (2015-11-01)
+* Fixed a bug that caused warning/error parsing to fail on windows (see [206eab7](https://github.com/lakrme/atom-levels/commit/77f24e18208d20328c0dbc0150c98cf881399658))
