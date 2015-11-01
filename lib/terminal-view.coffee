@@ -42,6 +42,8 @@ class TerminalView extends View
       @updateOnDidClear()
     @terminalSubscrs.add @terminal.onDidStartReadingTypedMessage =>
       @didStartReadingTypedMessage()
+    @terminalSubscrs.add @terminal.onDidStopReadingTypedMessage =>
+      @didStopReadingTypedMessage()
     @terminalSubscrs.add @terminal.onDidReadTypedMessage (typedMessage) =>
       @didReadTypedMessage(typedMessage)
 
@@ -136,6 +138,12 @@ class TerminalView extends View
 
   didStartReadingTypedMessage: ->
     @waitingForTypedMessage = true
+
+  didStopReadingTypedMessage: ->
+    if @waitingForTypedMessage
+      @activeLine.empty()
+      @activeLine.append('&nbsp;')
+      @waitingForTypedMessage = false
 
   didReadTypedMessage: (typedMessage) ->
     @waitingForTypedMessage = false

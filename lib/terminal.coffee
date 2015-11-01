@@ -144,6 +144,9 @@ class Terminal
   onDidStartReadingTypedMessage: (callback) ->
     @emitter.on('did-start-reading-typed-message',callback)
 
+  onDidStopReadingTypedMessage: (callback) ->
+    @emitter.on('did-stop-reading-typed-message',callback)
+
   onDidReadTypedMessage: (callback) ->
     @emitter.on('did-read-typed-message',callback)
 
@@ -284,11 +287,11 @@ class Terminal
 
   updateTypedMessageBufferOnDidCreateNewLine: ->
     if @typedMessageBuffer?
-      unless @typedMessageCurrentLineBuffer.match(/^<message\s+.*type=.*>$/)? \
-          or @typedMessageCurrentLineBuffer.match(/^<head>$/)? \
-          or @typedMessageCurrentLineBuffer.match(/^<\/head>$/)? \
-          or @typedMessageCurrentLineBuffer.match(/^<body>$/)? \
-          or @typedMessageCurrentLineBuffer.match(/^<\/body>$/)? \
+      unless @typedMessageCurrentLineBuffer.match(/^<message\s+.*type=.*>/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<head>/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<\/head>/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<body>/)? \
+          or @typedMessageCurrentLineBuffer.match(/^<\/body>/)? \
           or @typedMessageCurrentLineBuffer.match(/^<\/message>/)?
         # escape special characters
         @typedMessageCurrentLineBuffer = @typedMessageCurrentLineBuffer\
@@ -303,12 +306,13 @@ class Terminal
         @typedMessageBuffer = null
         @typedMessageCurrentLineBuffer = null
         @emitter.emit('did-read-typed-message',typedMessage)
+        @emitter.emit('did-stop-reading-typed-message')
 
   updateTypedMessageBufferOnDidUpdateActiveLine: (output) ->
     if @typedMessageBuffer?
       @typedMessageCurrentLineBuffer = output
     else
-      if output.match(/^<message\s+.*type=.*>$/)?
+      if output.match(/^<message\s+.*type=.*>/)?
         @typedMessageBuffer = ''
         @typedMessageCurrentLineBuffer = output
         @emitter.emit('did-start-reading-typed-message')
@@ -398,15 +402,16 @@ class Terminal
 
   didStartExecution: ->
     unless @isExecuting()
-      # @executionData = executionData
       @executing = true
       @emitter.emit('did-start-execution')
       @emitter.emit('did-change-is-executing',@executing)
 
   didStopExecution: ->
     if @isExecuting()
-      # executionData = @executionData
-      # @executionData = null
+      if @typedMessageBuffer?
+        @typedMessageBuffer = null
+        @typedMessageCurrentLineBuffer = null
+        @emitter.emit('did-stop-reading-typed-message')
       @executing = false
       @emitter.emit('did-stop-execution')
       @emitter.emit('did-change-is-executing',@executing)

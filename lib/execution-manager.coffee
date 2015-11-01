@@ -58,6 +58,7 @@ class ExecutionManager
 
   stopExecution: ->
     return unless @isExecuting()
+    @executionStoppedByUser = true
     @process.stdout.removeListener('data',@handleProcessData)
     @activeDataWriter?.dispose()
     unless @processExited
@@ -65,8 +66,6 @@ class ExecutionManager
     unless @processClosed
       @process.stdout.read()
       @process.stdout.destroy()
-    @terminal.writeLn('...')
-    @terminal.writeError('Execution stopped!')
 
   executionStarted: ->
     @executing = true
@@ -79,6 +78,10 @@ class ExecutionManager
     @terminal.exitScope()
     @terminal.didStopExecution()
     @levelCodeEditor.didStopExecution()
+    if @executionStoppedByUser
+      @executionStoppedByUser = false
+      @terminal.writeLn('...')
+      @terminal.writeSubtle('Execution stopped!')
 
   ## Process event handling ----------------------------------------------------
 
