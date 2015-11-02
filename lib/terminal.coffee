@@ -202,7 +202,7 @@ class Terminal
     dummyElement.textContent = '_'
     body = document.getElementsByTagName('body')[0]
     body.appendChild(dummyElement)
-    charWidth = dummyElement.offsetWidth
+    charWidth = dummyElement.getBoundingClientRect().width
     body.removeChild(dummyElement)
     charWidth
 
