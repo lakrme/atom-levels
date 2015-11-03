@@ -22,3 +22,6 @@
 * The terminal now is styled (colored) based on the UI theme
 * The maximum terminal font size has been increased
 * Annotation overlays now dynamically resize when changing the text editor's font size or width
+
+## 0.4.1 (2015-11-03)
+* Fixed a bug that caused annotation overlays to be too small for short warning/error messages (see [60a6f58](https://github.com/lakrme/atom-levels/commit/6e5f0fa0098e4d9f4c78dcba56a104c4452ab9b2))
