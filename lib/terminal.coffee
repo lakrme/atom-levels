@@ -179,17 +179,22 @@ class Terminal
 
   setFontSize: (fontSize) ->
     unless fontSize is @fontSize
-      minFontSize = terminalUtils.MIN_FONT_SIZE
-      maxFontSize = terminalUtils.MAX_FONT_SIZE
-      if minFontSize <= fontSize <= maxFontSize
+      fontSizes = terminalUtils.FONT_SIZES
+      if fontSizes.indexOf(fontSize) > -1
         @fontSize = fontSize
         @emitter.emit('did-change-font-size',@fontSize)
 
   increaseFontSize: ->
-    @setFontSize(@fontSize+1)
+    fontSizes = terminalUtils.FONT_SIZES
+    fontSizeIndex = fontSizes.indexOf(@fontSize)
+    if fontSizeIndex < fontSizes.length-1
+      @setFontSize(fontSizes[fontSizeIndex+1])
 
   decreaseFontSize: ->
-    @setFontSize(@fontSize-1)
+    fontSizes = terminalUtils.FONT_SIZES
+    fontSizeIndex = fontSizes.indexOf(@fontSize)
+    if fontSizeIndex > 0
+      @setFontSize(fontSizes[fontSizeIndex-1])
 
   getLineHeight: ->
     @fontSize + 4

@@ -56,7 +56,7 @@ module.exports =
             editor terminals.'
           type: 'integer'
           default: terminalUtils.DEFAULT_FONT_SIZE
-          enum: [terminalUtils.MIN_FONT_SIZE..terminalUtils.MAX_FONT_SIZE]
+          enum: terminalUtils.FONT_SIZES
         terminalContentLimit:
           title: 'Terminal Content Limit'
           description:

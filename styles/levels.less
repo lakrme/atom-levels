@@ -85,15 +85,15 @@
     }
 
     .terminal-container {
-      background-color: #000;
+      background-color: @terminal-background-color;
       .terminal {
-        color: #fff;
+        color: @terminal-text-color;
         font-family: Courier;
         overflow: auto;
         padding-left: 12.5px;
         position: relative;
         .cursor {
-          background-color: #fff;
+          background-color: @terminal-text-color;
           margin-left: 12.5px;
           position: absolute;
         }
@@ -118,11 +118,11 @@
     }
 
     .terminal-info {
-      background-color: #000;
-      border: 1px solid #fff;
+      background-color: @terminal-background-color;
+      border: 1px solid @terminal-text-color;
       border-radius: @component-border-radius;
       bottom: 10px;
-      color: #fff;
+      color: @terminal-text-color;
       display: none;
       height: 25px;
       line-height: 15px;

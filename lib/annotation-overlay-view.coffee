@@ -5,7 +5,7 @@
 module.exports =
 class AnnotationOverlayView extends View
 
-  @content: ({type,source,row,col,message}) ->
+  @content: (_,{type,source,row,col,message}) ->
     @div class: 'levels-view annotation-overlay', =>
       @span class: 'source pull-right', =>
         @text "Source: #{source.charAt(0).toUpperCase()+source.slice(1)}"
@@ -19,6 +19,12 @@ class AnnotationOverlayView extends View
         @text "at line #{row+1}" + if col? then ", column #{col+1}" else ""
       @hr()
       @text message
+
+  ## Initialization and destruction --------------------------------------------
+
+  initialize: (textEditor,_) ->
+
+  destroy: ->
 
   ## Showing and hiding the overlay --------------------------------------------
 

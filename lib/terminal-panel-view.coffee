@@ -261,9 +261,7 @@ class TerminalPanelView extends View
 
   updateOnDidChangeTerminalFontSize: (currentFontSize) ->
     @fontSizeSelect.empty()
-    minFontSize = terminalUtils.MIN_FONT_SIZE
-    maxFontSize = terminalUtils.MAX_FONT_SIZE
-    for fontSize in [minFontSize..maxFontSize]
+    for fontSize in terminalUtils.FONT_SIZES
       optionHtml = "<option value=\"#{fontSize}\""
       optionHtml += ' selected' if fontSize is currentFontSize
       optionHtml += ">#{fontSize}</option>"
