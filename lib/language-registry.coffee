@@ -23,8 +23,8 @@ class LanguageRegistry
   # Public: Invoke the given callback with all current and future languages in
   # the language registry.
   #
-  # * `callback` {Function} to be called with current and future text editors.
-  #   * `language` A {Language} that is present in the langauge registry at the
+  # * `callback` {Function} to be called with current and future languages.
+  #   * `language` A {Language} that is present in the language registry at the
   #     time of subscription or that is added at some later time.
   #
   # Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
@@ -95,7 +95,9 @@ class LanguageRegistry
   #
   # Returns a {Language}.
   readLanguageSync: (configFilePath,executablePath) ->
-    @readLanguageFromConfigurationFile(configFilePath,executablePath)
+    configFile = @validateConfigFile(configFilePath)
+    configFile.path = configFilePath
+    @createLanguage(configFile,executablePath)
 
   # Public: Read a language synchronously and add it to the registry.
   #
@@ -183,19 +185,19 @@ class LanguageRegistry
           when i is lowestIndex then results.push(language)
     results
 
-  ## Reading languages from configuration files --------------------------------
+  ## Creating languages from configuration files -------------------------------
 
-  readLanguageFromConfigurationFile: (configFilePath,executablePath) ->
-    configDirPath = path.dirname(configFilePath)
-    config = CSON.readFileSync(configFilePath)
+  validateConfigFile: (configFilePath) ->
+    configFile = CSON.readFileSync(configFilePath)
 
+  createLanguage: (config,executablePath) ->
     # adopt basic properties
     properties =
       name: config.name
       objectCodeFileType: config.objectCodeFileType
       lineCommentPattern: config.lineCommentPattern
       executionCommandPatterns: config.executionCommandPatterns
-      configFilePath: configFilePath
+      configFilePath: config.path
       executablePath: executablePath
 
     # set the default grammar
@@ -207,7 +209,7 @@ class LanguageRegistry
 
     if (defaultGrammarPath = config.defaultGrammar)?
       unless path.isAbsolute(defaultGrammarPath)
-        defaultGrammarPath = path.join(configDirPath,defaultGrammarPath)
+        defaultGrammarPath = path.join(config.path,'..',defaultGrammarPath)
       defaultGrammar = atom.grammars.readGrammarSync(defaultGrammarPath)
       defaultGrammar.name = grammarName
       defaultGrammar.scopeName = scopeName
@@ -235,7 +237,7 @@ class LanguageRegistry
       grammar = null
       if (grammarPath = levelConfig.grammar)?
         unless path.isAbsolute(grammarPath)
-          grammarPath = path.join(configDirPath,grammarPath)
+          grammarPath = path.join(config.path,'..',grammarPath)
         grammar = atom.grammars.readGrammarSync(grammarPath)
         grammar.name = grammarName
         grammar.scopeName = scopeName
