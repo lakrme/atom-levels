@@ -25,3 +25,6 @@
 
 ## 0.4.1 (2015-11-03)
 * Fixed a bug that caused annotation overlays to be too small for short warning/error messages
+
+## 0.4.2 (2015-11-05)
+* Fixed a bug that caused the terminal cursor to have a incorrect position when changing the font size after clearing the terminal
