@@ -66,12 +66,12 @@ class TerminalView extends View
     @moveCursorRelativeInCol(rowOffset)
 
   moveCursorRelativeInRow: (colOffset) ->
-    @cursorColIndex + colOffset
+    @cursorColIndex += colOffset
     leftOffset = colOffset * @charWidth
     @cursor.css('left',parseInt(@cursor.css('left'))+leftOffset)
 
   moveCursorRelativeInCol: (rowOffset) ->
-    @cursorRowIndex + rowOffset
+    @cursorRowIndex += rowOffset
     topOffset = rowOffset * @lineHeight
     @cursor.css('top',parseInt(@cursor.css('top'))+topOffset)
 
