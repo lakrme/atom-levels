@@ -128,7 +128,8 @@ class TerminalPanelView extends View
     atom.commands.dispatch(workspaceView,'levels:toggle-terminal')
 
   doClearTerminal: ->
-    @activeTerminal.clear()
+    workspaceView = atom.views.getView(atom.workspace)
+    atom.commands.dispatch(workspaceView,'levels:clear-terminal')
 
   doScrollTerminalToTop: ->
     @activeTerminal.scrollToTop()

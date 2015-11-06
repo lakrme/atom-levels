@@ -380,7 +380,8 @@ class Terminal
         else @writeLn("unset: #{propertyStr}: unknown property")
 
   clearCommand: =>
-    @clear()
+    workspaceView = atom.views.getView(atom.workspace)
+    atom.commands.dispatch(workspaceView,'levels:clear-terminal')
 
   topkekCommand: =>
     @writeLn(terminalUtils.TOPKEK)

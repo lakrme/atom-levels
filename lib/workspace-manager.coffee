@@ -65,6 +65,7 @@ class WorkspaceManager
       'levels:increase-terminal-font-size': @doIncreaseTerminalFontSize
       'levels:decrease-terminal-font-size': @doDecreaseTerminalFontSize
       'levels:toggle-terminal-focus': @doToggleTerminalFocus
+      'levels:clear-terminal': @doClearTerminal
       'levels:scroll-terminal-to-top': @doScrollTerminalToTop
       'levels:scroll-terminal-to-bottom': @doScrollTerminalToBottom
       'levels:start-execution': @doStartExecution
@@ -325,6 +326,15 @@ class WorkspaceManager
       else
         activeTerminal.show()
         activeTerminal.focus()
+    else
+      event.abortKeyBinding()
+
+  doClearTerminal: (event) ->
+    if workspace.isActive()
+      activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
+      activeTerminal = activeLevelCodeEditor.getTerminal()
+      activeTerminal.clear()
+      activeTerminal.focus()
     else
       event.abortKeyBinding()
 

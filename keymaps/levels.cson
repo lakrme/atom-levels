@@ -4,6 +4,7 @@
   'ctrl-alt-+': 'levels:increase-terminal-font-size'
   'ctrl-alt--': 'levels:decrease-terminal-font-size'
   'ctrl-alt-f': 'levels:toggle-terminal-focus'
+  'ctrl-alt-c': 'levels:clear-terminal'
   'ctrl-alt-up': 'levels:scroll-terminal-to-top'
   'ctrl-alt-down': 'levels:scroll-terminal-to-bottom'
   'ctrl-alt-r': 'levels:start-execution'
