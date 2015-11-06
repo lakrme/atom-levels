@@ -1,5 +1,6 @@
 {CompositeDisposable} = require('atom')
 {$,View}              = require('atom-space-pen-views')
+_                     = require('underscore-plus')
 
 # ------------------------------------------------------------------------------
 
@@ -150,8 +151,10 @@ class TerminalView extends View
     @putTypedMessage(typedMessage)
 
   putTypedMessage: (typedMessage) ->
-    headLines = typedMessage.head.split('\n').splice(1).slice(0,-1)
-    bodyLines = typedMessage.body.split('\n').splice(1).slice(0,-1)
+    headLines = _.map typedMessage.head.split('\n').splice(1).slice(0,-1), \
+      (line) -> line.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    bodyLines = _.map typedMessage.body.split('\n').splice(1).slice(0,-1), \
+      (line) -> line.replace(/</g,'&lt;').replace(/>/g,'&gt;')
 
     # process execution warnings and errors
     id = typedMessage.id
