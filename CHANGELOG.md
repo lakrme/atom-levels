@@ -28,3 +28,6 @@
 
 ## 0.4.2 (2015-11-05)
 * Fixed a bug that caused the terminal cursor to have a incorrect position when changing the font size after clearing the terminal
+
+## 0.4.3 (2015-11-18)
+* Fixed the error that caused level code editor deserialization to fail due to changes to Atom's `DeserializerManager` API (especially the `deserialize` function)
