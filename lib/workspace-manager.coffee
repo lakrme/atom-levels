@@ -230,8 +230,7 @@ class WorkspaceManager
           # try to deserialize level code editor with updated language registry
           # (returns `undefined` if the associated language of this text editor
           # has not been added yet)
-          levelCodeEditor = atom.deserializers.deserialize(\
-            levelCodeEditorState,textEditor)
+          levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState)
           # if successful, remove text editor serialization from state (prevents
           # the re-deserialization of the level code editor when adding another
           # language)

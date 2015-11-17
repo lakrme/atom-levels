@@ -18,9 +18,15 @@ class LevelCodeEditor
   ## Deserialization -----------------------------------------------------------
 
   atom.deserializers.add(this)
-  @version: 1
-  @deserialize: ({data},textEditor) ->
+  @version: 2
+  @deserialize: ({data}) ->
     if (language = languageRegistry.getLanguageForName(data.languageName))?
+      # NOTE since Atom 1.1 the text editor must be fetched again here because
+      # for whatever reason it's no longer possible to provide the deserializer
+      # with an additional params object...
+      for textEditor in atom.workspace.getTextEditors()
+        break if textEditor.id is data.textEditorId
+      # -----------------------------------------------------------------------
       level = language.getLevelForName(data.levelName)
       terminal = atom.deserializers.deserialize(data.terminalState)
       return new LevelCodeEditor({textEditor,language,level,terminal})
@@ -256,6 +262,7 @@ class LevelCodeEditor
     version: @constructor.version
     deserializer: 'LevelCodeEditor'
     data:
+      textEditorId: @textEditor.id
       languageName: @language.getName()
       levelName: @level.getName()
       terminalState: @terminal.serialize()
