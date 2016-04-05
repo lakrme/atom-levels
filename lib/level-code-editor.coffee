@@ -206,8 +206,8 @@ class LevelCodeEditor
   isExecuting: ->
     @executionManager.isExecuting()
 
-  startExecution: ->
-    @executionManager.startExecution()
+  startExecution: (options) ->
+    @executionManager.startExecution(options)
 
   didStartExecution: ->
     @removeExecutionIssues()

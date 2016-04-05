@@ -18,7 +18,7 @@ class ExecutionManager
   isExecuting: ->
     @executing
 
-  startExecution: ->
+  startExecution: ({runExecArgs}={}) ->
     @textEditor = @levelCodeEditor.getTextEditor()
     @language = @levelCodeEditor.getLanguage()
     @level = @levelCodeEditor.getLevel()
@@ -34,13 +34,14 @@ class ExecutionManager
     configFilePath = @language.getConfigFilePath()
     levelNumber = @level.getNumber()
     filePath = @textEditor.getPath()
-    cmd = [
+    cmd = ([
       "\"#{runExecPath}\""
       '-l',"\"#{configFilePath}\""
+    ].concat(runExecArgs).concat [
       "#{levelNumber}"
       "\"#{filePath}\""
       '2>&1'
-    ].join(' ')
+    ]).join(' ')
 
     @processExited = false
     @processClosed = false
@@ -82,6 +83,8 @@ class ExecutionManager
       @executionStoppedByUser = false
       @terminal.writeLn('...')
       @terminal.writeSubtle('Execution stopped!')
+
+
 
   ## Process event handling ----------------------------------------------------
 

@@ -31,3 +31,8 @@
 
 ## 0.4.3 (2015-11-18)
 * Fixed the error that caused level code editor deserialization to fail due to changes to Atom's `DeserializerManager` API (especially the `deserialize` function)
+
+## 0.5.0 (2016-04-05)
+* It is now possible to deactivate the language information file header in the package settings
+* The package API has been updated to provide access to the Levels workspace
+* Other internal adjustments
