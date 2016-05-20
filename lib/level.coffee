@@ -21,6 +21,9 @@ class Level
   getGrammar: ->
     @properties.grammar
 
+  getOption: (option) ->
+    @properties.options[option]
+
   ## Managing the associated language ------------------------------------------
 
   getLanguage: ->

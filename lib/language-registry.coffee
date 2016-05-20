@@ -232,6 +232,7 @@ class LanguageRegistry
         number: i
         name: levelConfig.name
         description: levelConfig.description
+        options: levelConfig.options ? {}
 
       # set level grammar
       grammar = null

@@ -1,8 +1,7 @@
-languageRegistry  = require('./language-registry').getInstance()
-workspaceManager  = require('./workspace-manager').getInstance()
+workspaceManager = require('./workspace-manager').getInstance()
 
-levelsConfig      = require('./levels-config')
-levelsServices    = require('./levels-services')
+levelsConfig     = require('./levels-config')
+levelsServices   = require('./levels-services')
 
 # ------------------------------------------------------------------------------
 
