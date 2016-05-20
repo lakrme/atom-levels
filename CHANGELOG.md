@@ -36,3 +36,6 @@
 * It is now possible to deactivate the language information file header in the package settings
 * The package API has been updated to provide access to the Levels workspace
 * Other internal adjustments
+
+## 0.5.1 (2016-05-20)
+* Added support for custom level properties
