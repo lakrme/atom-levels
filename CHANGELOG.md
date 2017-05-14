@@ -39,3 +39,7 @@
 
 ## 0.5.1 (2016-05-20)
 * Added support for custom level properties
+
+## 0.5.2 (2017-05-15)
+* Fixed a bug in the level status view that is caused by an upgrade of CoffeeScript
+* Removed the atom-text-editor shadow DOM boundary
