@@ -1,14 +1,28 @@
 {
   "name": "levels",
-  "main": "./lib/levels",
   "version": "0.5.2",
   "description": "The Atom interface to level programming languages created with the LPS plug-in for Eclipse!",
   "keywords": [
     "lps"
   ],
-  "repository": "https://github.com/lakrme/atom-levels",
+  "main": "./lib/levels",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lakrme/atom-levels.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lakrme/atom-levels/issues"
+  },
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
+  },
+  "devDependencies": {
+    "coffeelint": "^1.16.0"
+  },
+  "dependencies": {
+    "atom-space-pen-views": "^2.0.3",
+    "season": "^5.2.0",
+    "underscore-plus": "^1.6.6"
   },
   "providedServices": {
     "levels": {
@@ -23,10 +37,5 @@
         "^1.0.0": "consumeStatusBar"
       }
     }
-  },
-  "dependencies": {
-    "atom-space-pen-views": "^2.0.3",
-    "season": "^5.2.0",
-    "underscore-plus": "^1.6.6"
   }
 }
