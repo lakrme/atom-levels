@@ -61,8 +61,8 @@
     "level": "error"
   },
   "no_debugger": {
-    "console": false,
-    "level": "warn"
+    "console": true,
+    "level": "error"
   },
   "no_empty_functions": {
     "level": "ignore"
