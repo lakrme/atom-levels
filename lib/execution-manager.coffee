@@ -110,7 +110,7 @@ class ExecutionManager
         @writeDataLine(lastLine) if lastLine
         @activeDataWriter.dispose()
         @process.stdout.resume()
-      else
+      else if lines.length > 1
         @writeDataLine(lines.shift())
         @terminal.newLine()
     ,10
