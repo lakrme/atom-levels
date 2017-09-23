@@ -23,7 +23,7 @@
 
 ## 0.4.1 (2015-11-03)
 
-* Fixed a bug that caused annotation overlays to be too small for short warning/error messages
+* Fixed a bug that caused annotation overlays to be too small for short warning or error messages
 
 ## 0.4.0 (2015-11-03)
 
@@ -34,7 +34,7 @@
 
 ## 0.3.2 (2015-11-01)
 
-* Fixed a bug that caused warning/error parsing to fail on Windows
+* Fixed a bug that caused warning or error parsing to fail on Windows
 
 ## 0.3.1 (2015-11-01)
 
