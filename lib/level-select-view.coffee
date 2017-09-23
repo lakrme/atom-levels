@@ -1,5 +1,4 @@
 {SelectListView} = require('atom-space-pen-views')
-_                = require('underscore-plus')
 
 workspace        = require('./workspace').getInstance()
 
@@ -69,7 +68,7 @@ class LevelSelectView extends SelectListView
   update: (@activeLevelCodeEditor) ->
     @activeLanguage = @activeLevelCodeEditor.getLanguage()
     @activeLevel = @activeLevelCodeEditor.getLevel()
-    @setItems _.map @activeLanguage.getLevels(), (level) ->
+    @setItems @activeLanguage.getLevels().map (level) ->
       filterKey: "#{level.getName()} #{level.getDescription()}"
       level: level
 

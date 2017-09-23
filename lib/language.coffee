@@ -1,7 +1,6 @@
 {Emitter}     = require('atom')
 path          = require('path')
 CSON          = require('season')
-_             = require('underscore-plus')
 
 languageUtils = require('./language-utils')
 
@@ -66,7 +65,7 @@ class Language
 
   getLevels: ->
     levels = (level for levelName,level of @levelsByName)
-    _.sortBy(levels,(level) -> level.getNumber())
+    levels.sort (e1, e2) -> if e1.getNumber() >= e2.getNumber() then 1 else -1
 
   getLevelsByName: ->
     @levelsByName

@@ -1,7 +1,6 @@
 {Disposable}      = require('atom')
 child_process     = require('child_process')
 path              = require('path')
-_                 = require('underscore-plus')
 
 # ------------------------------------------------------------------------------
 
@@ -135,8 +134,9 @@ class ExecutionManager
     # get child process IDs
     try
       out = child_process.execSync("pgrep -P #{parentPid}",{env: process.env})
-      childPids = _.filter _.map(out.toString().split('\n'),parseInt), (pid) ->
-        not isNaN(pid)
+      childPids = out.toString().split('\n')
+                    .map (pid) -> parseInt(pid)
+                    .filter (pid) -> not isNaN(pid)
     catch error
       # execSync returns an error if the process has no childs, so we ignore
       # this error here and continue with an empty childPids array
