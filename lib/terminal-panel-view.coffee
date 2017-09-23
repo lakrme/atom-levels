@@ -167,8 +167,8 @@ class TerminalPanelView extends View
 
   updateOnDidExitWorkspace: ->
     @hide()
-    @activeTerminalSubscrs.dispose()
-    @activeLanguageSubscrs.dispose()
+    @activeTerminalSubscrs?.dispose()
+    @activeLanguageSubscrs?.dispose()
     @activeTerminal = null
     @activeLanguage = null
     @fontSizeSelect.off()
