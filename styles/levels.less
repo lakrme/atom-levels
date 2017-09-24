@@ -1,7 +1,91 @@
 @import "ui-variables";
-@import "levels-ui-variables";
+
+@panel-background-color: @overlay-background-color;
+@panel-border-color: @overlay-border-color;
+@panel-box-shadow-color: rgba(0,0,0,0.5);
+@panel-section-background-color: lighten(@overlay-background-color,3%);
+
+@terminal-text-color: @text-color-highlight;
+@terminal-background-color: @inset-panel-background-color;
+
+@annotation-warning-background-color: fade(@text-color-warning,25%);
+@annotation-error-background-color: fade(@text-color-error,25%);
+
+atom-text-editor.editor {
+  .line-number {
+    &.syntax--annotation:hover {
+      opacity: 1;
+    }
+    
+    &.annotation-warning {
+      color: @text-color-warning;
+      background-color: @annotation-warning-background-color;
+    }
+    
+    &.annotation-error {
+      color: @text-color-error;
+      background-color: @annotation-error-background-color;
+    }
+  }
+}
 
 .levels-view {
+  &.annotation-overlay {
+    background-color: fade(#aaa,90%);
+    border-top-right-radius: @component-border-radius;
+    border-bottom-right-radius: @component-border-radius;
+    border-bottom-left-radius: @component-border-radius;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    color: #000;
+    display: none;
+    font-size: 85%;
+
+    margin-top: 3px;
+    padding: @component-padding / 2;
+
+    min-width: 300px;
+    width: 50%;
+
+    hr {
+      border-top: 1px solid #888;
+      margin: 5px 0;
+    }
+
+    &::before {
+      border-color: transparent transparent transparent fade(#aaa,90%);
+      border-style: solid;
+      border-width: 6px 0 0 6px;
+      content: "";
+      height: 0;
+      left: 0;
+      position: absolute;
+      top: -3px;
+      width: 0;
+    }
+
+    .type {
+      font-size: 9px;
+      margin-right: 5px;
+    }
+
+    .position {
+      color: #666;
+      display: inline-block;
+    }
+
+    .source {
+      color: #666;
+      display: inline-block;
+    }
+  }
+
+  &.level-status {
+    a, a:focus, a:hover {
+      color: @text-color;
+      outline: 0;
+    }
+  }
+
   &.panel {
     background-color: @panel-background-color;
     border: 1px solid @panel-border-color;
