@@ -53,7 +53,7 @@ class LevelStatusView extends View
     # TODO check is level name is to long, shorten the link?
     activeLevelName = @activeLevel.getName()
     # ------------------------------------------------------
-    @levelStatusLink.text("(#{activeLevelName})")
+    @levelStatusLink.text("#{activeLevelName}")
     @levelStatusLink.attr('data-level',activeLevelName)
 
   ## Showing and hiding this view ----------------------------------------------
