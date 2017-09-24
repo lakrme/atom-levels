@@ -1,3 +1,9 @@
+## 0.5.3 (2017-09-24)
+
+* Removed the parentheses from the level status view
+* Removed the `underscore-plus` dependency
+* Fixed a bug where a non-existing line was written to the terminal
+
 ## 0.5.2 (2017-05-15)
 
 * Fixed a bug in the level status view that is caused by an upgrade of CoffeeScript
