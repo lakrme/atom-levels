@@ -31,17 +31,16 @@ class WorkspaceManager
       terminal.writeInfo('Welcome to the Levels terminal!')
       terminalView
 
-    @levelStatusView = new LevelStatusView
     @levelSelectView = new LevelSelectView
     @terminalPanelView = new TerminalPanelView
 
   # Destroys the Levels workspace (view) components (invoked on deactivation).
   cleanUpWorkspace: ->
     @viewProviders.dispose()
-    @levelStatusView.destroy()
+    @levelStatusView?.destroy()
+    @levelStatusTile?.destroy()
     @levelSelectView.destroy()
     @terminalPanelView.destroy()
-    @levelStatusTile.destroy()
 
     # destroy Levels workspace
     for language in languageRegistry.getLanguages()
@@ -371,9 +370,8 @@ class WorkspaceManager
   ## Consumed services ---------------------------------------------------------
 
   consumeStatusBar: (statusBar) ->
-    @levelStatusTile = statusBar.addRightTile
-      item: @levelStatusView
-      priority: 9
+    @levelStatusView = new LevelStatusView
+    @levelStatusTile = statusBar.addRightTile {priority: 9, item: @levelStatusView.element}
 
   ## Serialization -------------------------------------------------------------
 

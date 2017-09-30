@@ -1,67 +1,42 @@
-{CompositeDisposable} = require('atom')
-{View}                = require('atom-space-pen-views')
-
+{CompositeDisposable} = require 'atom'
 workspace             = require('./workspace').getInstance()
 
-# ------------------------------------------------------------------------------
-
 module.exports =
-class LevelStatusView extends View
+class LevelStatusView
+  constructor: ->
+    @element = document.createElement 'div'
+    @element.className = 'levels-view level-status inline-block'
+    @element.style.display = 'none'
 
-  @content: ->
-    @div class: 'levels-view level-status inline-block', =>
-      @a class: 'inline-block',
-         href: '#',
-         click: 'doToggleLevelSelect',
-         outlet: 'levelStatusLink'
+    @statusLink = document.createElement 'a'
+    @statusLink.className = 'inline-block'
+    @statusLink.addEventListener 'click', => @toggleLevelSelect()
+    @element.appendChild @statusLink
 
-  ## Initialization and destruction --------------------------------------------
-
-  initialize: ->
-    # subscribe to the Levels workspace
-    @workspaceSubscrs = new CompositeDisposable
-    @workspaceSubscrs.add workspace.onDidEnterWorkspace \
-      (activeLevelCodeEditor) =>
-        @updateOnDidEnterWorkspace(activeLevelCodeEditor)
-    @workspaceSubscrs.add workspace.onDidExitWorkspace =>
-        @updateOnDidExitWorkspace()
-    @workspaceSubscrs.add workspace.onDidChangeActiveLevel \
-      (activeLevel) =>
-        @updateOnDidChangeActiveLevelOfWorkspace(activeLevel)
-    # initially hide the level status
-    @hide()
+    @subscriptions = new CompositeDisposable
+    @subscriptions.add workspace.onDidEnterWorkspace (activeLevelCodeEditor) => @handleOnDidEnterWorkspace activeLevelCodeEditor
+    @subscriptions.add workspace.onDidExitWorkspace => @handleOnDidExitWorkspace()
+    @subscriptions.add workspace.onDidChangeActiveLevel (activeLevel) => @handleOnDidChangeActiveLevel activeLevel
 
   destroy: ->
-    @workspaceSubscrs.dispose()
+    @subscriptions.dispose()
+    @statusTooltip?.dispose()
 
-  ## Handling view events ------------------------------------------------------
+  toggleLevelSelect: ->
+    workspaceView = atom.views.getView atom.workspace
+    atom.commands.dispatch workspaceView, 'levels:toggle-level-select'
 
-  doToggleLevelSelect: ->
-    workspaceView = atom.views.getView(atom.workspace)
-    atom.commands.dispatch(workspaceView,'levels:toggle-level-select')
+  handleOnDidEnterWorkspace: (activeLevelCodeEditor) ->
+    @handleOnDidChangeActiveLevel activeLevelCodeEditor.getLevel()
+    @element.style.display = ''
 
-  ## Updating this view --------------------------------------------------------
+  handleOnDidExitWorkspace: ->
+    @element.style.display = 'none'
 
-  updateOnDidEnterWorkspace: (activeLevelCodeEditor) ->
-    @updateOnDidChangeActiveLevelOfWorkspace(activeLevelCodeEditor.getLevel())
-    @show()
+  handleOnDidChangeActiveLevel: (activeLevel) ->
+    activeLevelName = activeLevel.getName()
+    @statusLink.textContent = activeLevelName
+    @statusLink.dataset.level = activeLevelName
 
-  updateOnDidExitWorkspace: ->
-    @hide()
-
-  updateOnDidChangeActiveLevelOfWorkspace: (@activeLevel) ->
-    # TODO check is level name is to long, shorten the link?
-    activeLevelName = @activeLevel.getName()
-    # ------------------------------------------------------
-    @levelStatusLink.text("#{activeLevelName}")
-    @levelStatusLink.attr('data-level',activeLevelName)
-
-  ## Showing and hiding this view ----------------------------------------------
-
-  show: ->
-    @css({display: ''})
-
-  hide: ->
-    @css({display: 'none'})
-
-# ------------------------------------------------------------------------------
+    @statusTooltip?.dispose()
+    @statusTooltip = atom.tooltips.add @statusLink, {title: activeLevel.getDescription(), html: false}
