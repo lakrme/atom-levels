@@ -1,92 +1,78 @@
-{SelectListView} = require('atom-space-pen-views')
-
-workspace        = require('./workspace').getInstance()
-
-# ------------------------------------------------------------------------------
+SelectListView = require 'atom-select-list'
+workspace      = require('./workspace').getInstance()
 
 module.exports =
-class LevelSelectView extends SelectListView
-
-  ## Initialization and destruction --------------------------------------------
-
-  initialize: (@workspaceManager) ->
-    super
-    @addClass('levels-view level-select')
+class LevelSelectView
+  constructor: ->
+    @selectListView = new SelectListView
+      items: [],
+      filterKeyForItem: (level) -> level.getName(),
+      elementForItem: (level) => @viewForLevel level,
+      didCancelSelection: => @cancel(),
+      didConfirmSelection: (level) => @confirm level
 
   destroy: ->
     @cancel()
+    @selectListView.destroy()
 
-  cancelled: ->
-    @modalPanel?.destroy()
-    @modalPanel = null
+  cancel: ->
+    @panel?.destroy()
+    @panel = null
 
-  ## Overwritten list view methods ---------------------------------------------
+    @previouslyFocusedElement?.focus()
+    @previouslyFocusedElement = null
 
-  getFilterKey: ->
-    'filterKey'
+  attach: ->
+    @previouslyFocusedElement = document.activeElement
+    @panel ?= atom.workspace.addModalPanel item: @selectListView
 
-  confirmed: ({level}) ->
+    @selectListView.focus()
+    @selectListView.reset()
+
+  confirm: (level) ->
     @cancel()
-    unless level.getName() is @activeLevel.getName()
-      @activeLevelCodeEditor.setLevel(level)
-      @activeLanguage.setLastActiveLevel(level)
+    if level.getName() != @activeLevel.getName()
+      @activeLevelCodeEditor.setLevel level
+      @activeLanguage.setLastActiveLevel level
 
-  viewForItem: ({level}) ->
-    listElement = document.createElement('li')
-
-    if level.getDescription()?
-      listElement.classList.add('two-lines')
-      # define the primary line (level name)
-      nameElement = document.createElement('div')
-      if level is @activeLevel
-        nameElement.classList.add('primary-line','icon','icon-triangle-right')
-      else
-        nameElement.classList.add('primary-line','no-icon')
-      nameElement.textContent = level.getName()
-      # define the secondary line (level description)
-      descrElement = document.createElement('div')
-      descrElement.classList.add('secondary-line','no-icon')
-      descrElement.textContent = level.getDescription()
-      # append lines to the list element
-      listElement.appendChild(nameElement)
-      listElement.appendChild(descrElement)
+  toggle: ->
+    if @panel
+      @cancel()
     else
-      nameElement = document.createElement('span')
-      if level is @activeLevel
-        nameElement.classList.add('icon','icon-triangle-right')
-      else
-        nameElement.classList.add('no-icon')
-      nameElement.textContent = level.getName()
-      # append line to the list element
-      listElement.appendChild(nameElement)
-
-    listElement.dataset.level = level.getName()
-    listElement
-
-  ## Updating this view --------------------------------------------------------
+      @update workspace.getActiveLevelCodeEditor()
+      @attach()
 
   update: (@activeLevelCodeEditor) ->
     @activeLanguage = @activeLevelCodeEditor.getLanguage()
     @activeLevel = @activeLevelCodeEditor.getLevel()
-    @setItems @activeLanguage.getLevels().map (level) ->
-      filterKey: "#{level.getName()} #{level.getDescription()}"
-      level: level
+    @selectListView.update items: @activeLanguage.getLevels()
 
-  ## Showing and hiding this view ----------------------------------------------
+  viewForLevel: (level) ->
+    listElement = document.createElement 'li'
+    listElement.dataset.level = level.getName()
 
-  toggle: ->
-    if @modalPanel?
-      @hide()
+    if level.getDescription()
+      listElement.className = 'two-lines'
+
+      nameElement = document.createElement 'div'
+      if level == @activeLevel
+        nameElement.className = 'primary-line icon icon-triangle-right'
+      else
+        nameElement.className = 'primary-line no-icon'
+      nameElement.textContent = level.getName()
+      listElement.appendChild nameElement
+
+      descElement = document.createElement 'div'
+      descElement.className = 'secondary-line no-icon'
+      descElement.textContent = level.getDescription()
+      listElement.appendChild descElement
     else
-      @update(workspace.getActiveLevelCodeEditor())
-      @show()
+      nameElement = document.createElement 'span'
+      if level == @activeLevel
+        nameElement.className = 'icon icon-triangle-right'
+      else
+        nameElement.className = 'no-icon'
+      nameElement.textContent = level.getName()
+      listElement.appendChild nameElement
 
-  show: ->
-    @storeFocusedElement()
-    @modalPanel ?= atom.workspace.addModalPanel(item: @)
-    @focusFilterEditor()
-
-  hide: ->
-    @cancel()
-
-# ------------------------------------------------------------------------------
+    return listElement
