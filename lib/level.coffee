@@ -1,34 +1,23 @@
-# ------------------------------------------------------------------------------
-
 module.exports =
 class Level
-
-  ## Construction --------------------------------------------------------------
-
   constructor: (@properties) ->
 
-  ## Getting level properties --------------------------------------------------
-
   getNumber: ->
-    @properties.number
+    return @properties.number
 
   getName: ->
-    @properties.name
+    return @properties.name
 
   getDescription: ->
-    @properties.description
+    return @properties.description
 
   getGrammar: ->
-    @properties.grammar
+    return @properties.grammar
 
   getOption: (option) ->
-    @properties.options[option]
-
-  ## Managing the associated language ------------------------------------------
+    return @properties.options[option]
 
   getLanguage: ->
-    @language
+    return @language
 
   setLanguage: (@language) ->
-
-# ------------------------------------------------------------------------------
