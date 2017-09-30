@@ -1,44 +1,34 @@
-{Emitter} = require('atom')
-
-# ------------------------------------------------------------------------------
+{Emitter} = require 'atom'
 
 module.exports =
 class ExecutionIssue
-
-  ## Construction and destruction ----------------------------------------------
-
-  constructor: (@levelCodeEditor,{@id,@type,@source,@row,@column,@message}) ->
+  constructor: (@levelCodeEditor, {@id, @type, @source, @row, @column, @message}) ->
     @emitter = new Emitter
 
   destroy: ->
-    @emitter.emit('did-destroy')
-
-  ## Event subscrption ---------------------------------------------------------
+    @emitter.emit 'did-destroy'
+    return
 
   onDidDestroy: (callback) ->
-    @emitter.on('did-destroy')
-
-  ## Properties ----------------------------------------------------------------
+    @emitter.on 'did-destroy'
 
   getLevelCodeEditor: ->
-    @levelCodeEditor
+    return @levelCodeEditor
 
   getId: ->
-    @id
+    return @id
 
   getType: ->
-    @type
+    return @type
 
   getSource: ->
-    @source
+    return @source
 
   getRow: ->
-    @row
+    return @row
 
   getColumn: ->
-    @column
+    return @column
 
   getMessage: ->
-    @message
-
-# ------------------------------------------------------------------------------
+    return @message

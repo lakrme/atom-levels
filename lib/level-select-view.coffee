@@ -14,6 +14,7 @@ class LevelSelectView
   destroy: ->
     @cancel()
     @selectListView.destroy()
+    return
 
   cancel: ->
     @panel?.destroy()
@@ -21,6 +22,7 @@ class LevelSelectView
 
     @previouslyFocusedElement?.focus()
     @previouslyFocusedElement = null
+    return
 
   attach: ->
     @previouslyFocusedElement = document.activeElement
@@ -28,12 +30,14 @@ class LevelSelectView
 
     @selectListView.focus()
     @selectListView.reset()
+    return
 
   confirm: (level) ->
     @cancel()
     if level.getName() != @activeLevel.getName()
       @activeLevelCodeEditor.setLevel level
       @activeLanguage.setLastActiveLevel level
+    return
 
   toggle: ->
     if @panel
@@ -41,11 +45,13 @@ class LevelSelectView
     else
       @update workspace.getActiveLevelCodeEditor()
       @attach()
+    return
 
   update: (@activeLevelCodeEditor) ->
     @activeLanguage = @activeLevelCodeEditor.getLanguage()
     @activeLevel = @activeLevelCodeEditor.getLevel()
     @selectListView.update items: @activeLanguage.getLevels()
+    return
 
   viewForLevel: (level) ->
     listElement = document.createElement 'li'

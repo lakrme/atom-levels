@@ -21,17 +21,21 @@ class LevelStatusView
   destroy: ->
     @subscriptions.dispose()
     @statusTooltip?.dispose()
+    return
 
   toggleLevelSelect: ->
     workspaceView = atom.views.getView atom.workspace
     atom.commands.dispatch workspaceView, 'levels:toggle-level-select'
+    return
 
   handleOnDidEnterWorkspace: (activeLevelCodeEditor) ->
     @handleOnDidChangeActiveLevel activeLevelCodeEditor.getLevel()
     @element.style.display = ''
+    return
 
   handleOnDidExitWorkspace: ->
     @element.style.display = 'none'
+    return
 
   handleOnDidChangeActiveLevel: (activeLevel) ->
     activeLevelName = activeLevel.getName()
@@ -40,3 +44,4 @@ class LevelStatusView
 
     @statusTooltip?.dispose()
     @statusTooltip = atom.tooltips.add @statusLink, {title: activeLevel.getDescription(), html: false}
+    return
