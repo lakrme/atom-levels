@@ -1,41 +1,39 @@
-{Disposable}      = require('atom')
-child_process     = require('child_process')
-path              = require('path')
-
-# ------------------------------------------------------------------------------
+{Disposable}  = require 'atom'
+child_process = require 'child_process'
+path          = require 'path'
 
 module.exports =
 class ExecutionManager
-
-  ## Construction --------------------------------------------------------------
-
   constructor: (@levelCodeEditor) ->
     @executing = false
 
-  ## Level code execution ------------------------------------------------------
-
   isExecuting: ->
-    @executing
+    return @executing
 
-  startExecution: ({runExecArgs}={}) ->
+  startExecution: ({runExecArgs} = {}) ->
+    @terminal = @levelCodeEditor.getTerminal()
+
+    if @isExecuting() || @terminal.isExecuting()
+      return
+
     @textEditor = @levelCodeEditor.getTextEditor()
     @language = @levelCodeEditor.getLanguage()
     @level = @levelCodeEditor.getLevel()
-    @terminal = @levelCodeEditor.getTerminal()
-
-    return if @isExecuting() or @terminal.isExecuting()
 
     configKeyPath = 'levels.workspaceSettings.clearTerminalOnExecution'
-    @terminal.clear() if atom.config.get(configKeyPath)
-    @terminal.writeLn('Running level code...')
+    if atom.config.get configKeyPath
+      @terminal.clear()
+
+    @terminal.writeLn 'Running level code …'
 
     runExecPath = @language.getRunExecPath()
     configFilePath = @language.getConfigFilePath()
     levelNumber = @level.getNumber()
     filePath = @textEditor.getPath()
+
     cmd = ([
       "\"#{runExecPath}\""
-      '-l',"\"#{configFilePath}\""
+      '-l', "\"#{configFilePath}\""
     ].concat(runExecArgs).concat [
       "#{levelNumber}"
       "\"#{filePath}\""
@@ -45,33 +43,36 @@ class ExecutionManager
     @processExited = false
     @processClosed = false
 
-    # spawn child process and set up handlers
-    @process = child_process.exec cmd,
-      cwd: path.dirname(runExecPath)
-      env: process.env
-    @terminalSubscr = @terminal.onDidEnterInput (input) =>
-      @process.stdin.write("#{input}\n")
-    @process.stdout.on('data',@handleProcessData)
-    @process.on('exit',@handleProcessExit)
-    @process.on('close',@handleProcessClose)
+    @process = child_process.exec cmd, {cwd: path.dirname runExecPath, env: process.env}
+    @terminalSubscription = @terminal.onDidEnterInput (input) => @process.stdin.write "#{input}\n"
+    @process.stdout.on 'data', @handleProcessData
+    @process.on 'exit', @handleProcessExit
+    @process.on 'close', @handleProcessClose
     @executionStarted()
 
+    return
+
   stopExecution: ->
-    return unless @isExecuting()
+    if !@isExecuting()
+      return
+
     @executionStoppedByUser = true
-    @process.stdout.removeListener('data',@handleProcessData)
+    @process.stdout.removeListener 'data', @handleProcessData
     @activeDataWriter?.dispose()
-    unless @processExited
-      @killProcess(@process.pid)
-    unless @processClosed
+    if !@processExited
+      @killProcess @process.pid
+    if !@processClosed
       @process.stdout.read()
       @process.stdout.destroy()
+
+    return
 
   executionStarted: ->
     @executing = true
     @terminal.enterScope()
     @terminal.didStartExecution()
     @levelCodeEditor.didStartExecution()
+    return
 
   executionStopped: ->
     @executing = false
@@ -80,95 +81,83 @@ class ExecutionManager
     @levelCodeEditor.didStopExecution()
     if @executionStoppedByUser
       @executionStoppedByUser = false
-      @terminal.writeLn('...')
-      @terminal.writeSubtle('Execution stopped!')
-
-
-
-  ## Process event handling ----------------------------------------------------
+      @terminal.writeLn '…'
+      @terminal.writeSubtle 'Execution stopped!'
+    return
 
   handleProcessData: (data) =>
     @process.stdout.pause()
-    lines = data.toString().split('\n')
-    @activeDataWriter = @writeDataLines(lines)
+    lines = data.toString().split '\n'
+    @activeDataWriter = @writeDataLines lines
+    return
 
-  handleProcessExit: (code,signal) =>
+  handleProcessExit: (code, signal) =>
     @processExited = true
+    return
 
-  handleProcessClose: (code,signal) =>
-    @terminalSubscr.dispose()
+  handleProcessClose: (code, signal) =>
+    @terminalSubscription.dispose()
     @process.stdin.end()
     @processClosed = true
-    @executionStopped() unless @activeDataWriter?
-
-  ## Writing data to the terminal ----------------------------------------------
+    if !@activeDataWriter
+      @executionStopped()
+    return
 
   writeDataLines: (lines) ->
     intervalId = setInterval =>
-      if lines.length is 1
+      if lines.length == 1
         lastLine = lines.shift()
-        @writeDataLine(lastLine) if lastLine
+        if lastLine
+          @writeDataLine lastLine
         @activeDataWriter.dispose()
         @process.stdout.resume()
       else if lines.length > 1
-        @writeDataLine(lines.shift())
+        @writeDataLine lines.shift()
         @terminal.newLine()
-    ,10
+    , 10
     new Disposable =>
-      clearInterval(intervalId)
+      clearInterval intervalId
       @activeDataWriter = null
-      @executionStopped() if @processClosed
+      if @processClosed
+        @executionStopped()
 
   writeDataLine: (line) ->
-    @terminal.write(line)
-
-  ## Killing processes ---------------------------------------------------------
+    @terminal.write line
+    return
 
   killProcess: (pid) ->
     switch process.platform
-      when 'darwin' then @killProcessOnDarwinAndLinux(pid)
-      when 'linux'  then @killProcessOnDarwinAndLinux(pid)
-      when 'win32'  then @killProcessOnWin32(pid)
+      when 'darwin' then @killProcessOnDarwinAndLinux pid
+      when 'linux'  then @killProcessOnDarwinAndLinux pid
+      when 'win32'  then @killProcessOnWin32 pid
 
   killProcessOnDarwinAndLinux: (parentPid) ->
-    # get child process IDs
     try
-      out = child_process.execSync("pgrep -P #{parentPid}",{env: process.env})
+      out = child_process.execSync "pgrep -P #{parentPid}", {env: process.env}
       childPids = out.toString().split('\n')
-                    .map (pid) -> parseInt(pid)
-                    .filter (pid) -> not isNaN(pid)
+                    .map (pid) -> parseInt pid
+                    .filter (pid) -> not isNaN pid
     catch error
-      # execSync returns an error if the process has no childs, so we ignore
-      # this error here and continue with an empty childPids array
       childPids = []
-    # recursively kill child processes
     for childPid in childPids
-      @killProcessOnDarwinAndLinux(childPid)
-    # kill parent process
-    try process.kill(parentPid,'SIGINT')
+      @killProcessOnDarwinAndLinux childPid
+    try process.kill parentPid, 'SIGINT'
+
+    return
 
   killProcessOnWin32: (parentPid) ->
     try
       wmicProcess = child_process.spawn 'wmic', [
-        'process','where',"(ParentProcessId=#{parentPid})",'get','processid'
+        'process', 'where', "(ParentProcessId=#{parentPid})", 'get', 'processid'
       ]
       out = ''
-      wmicProcess.stdout.on 'data', (data) ->
-        out += data
+      wmicProcess.stdout.on 'data', (data) -> out += data
       wmicProcess.stdout.on 'close', =>
-        # get child process pids
         childPids = out.split(/\s+/)
-                      .filter (pid) -> /^\d+$/.test(pid)
-                      .map    (pid) -> parseInt(pid)
-                      .filter (pid) -> pid isnt parentPid and 0 < pid < Infinity
-        # recursively kill child processes
+                      .filter (pid) -> /^\d+$/.test pid
+                      .map (pid) -> parseInt pid
+                      .filter (pid) -> pid != parentPid && 0 < pid < Infinity
         for childPid in childPids
-          @killProcessOnWin32(childPid)
-        # kill parent process
-        try process.kill(parentPid,'SIGINT')
-    catch error
-      # TODO show proper error notification here
-      console.log("Spawn error!")
-      # ----------------------------------------
-
-# ------------------------------------------------------------------------------
+          @killProcessOnWin32 childPid
+        try process.kill parentPid, 'SIGINT'
+    return
