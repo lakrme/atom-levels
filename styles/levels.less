@@ -31,13 +31,11 @@ atom-text-editor.editor {
 
 .levels-view {
   &.annotation-overlay {
-    background-color: fade(#aaa,90%);
-    border-top-right-radius: @component-border-radius;
-    border-bottom-right-radius: @component-border-radius;
-    border-bottom-left-radius: @component-border-radius;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    color: #000;
-    display: none;
+    background-color: @overlay-background-color;
+    border-radius: @component-border-radius;
+    border-top-left-radius: 0px;
+    box-shadow: 0px 2px 8px 1px rgba(0, 0, 0, 0.3);
+    color: @text-color-highlight;
     font-size: 85%;
 
     margin-top: 3px;
@@ -47,12 +45,12 @@ atom-text-editor.editor {
     width: 50%;
 
     hr {
-      border-top: 1px solid #888;
-      margin: 5px 0;
+      border-top: 1px solid @overlay-border-color;
+      margin: 5px 0px;
     }
 
     &::before {
-      border-color: transparent transparent transparent fade(#aaa,90%);
+      border-color: transparent transparent transparent @overlay-background-color;
       border-style: solid;
       border-width: 6px 0 0 6px;
       content: "";
@@ -63,26 +61,38 @@ atom-text-editor.editor {
       width: 0;
     }
 
-    .type {
-      font-size: 9px;
-      margin-right: 5px;
-    }
+    .header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
 
-    .position {
-      color: #666;
-      display: inline-block;
-    }
+      .type {
+        flex: 0 0 auto;
+        margin-right: 5px;
+        text-transform: capitalize;
+      }
 
-    .source {
-      color: #666;
-      display: inline-block;
+      .position {
+        flex: 0 0 auto;
+        color: @text-color;
+      }
+
+      .source {
+        flex: 0 0 auto;
+        margin-left: auto;
+        color: @text-color;
+        text-transform: capitalize;
+
+        &::before {
+          content: "Source: ";
+        }
+      }
     }
   }
 
   &.level-status {
-    a, a:focus, a:hover {
+    a, a:hover {
       color: @text-color;
-      outline: 0;
     }
   }
 

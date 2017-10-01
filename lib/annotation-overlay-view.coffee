@@ -1,37 +1,39 @@
-{View} = require('atom-space-pen-views')
-
-# ------------------------------------------------------------------------------
-
 module.exports =
-class AnnotationOverlayView extends View
+class AnnotationOverlayView
+  constructor: ({type, source, row, col, message}) ->
+    @element = document.createElement 'div'
+    @element.className = 'levels-view annotation-overlay'
+    @element.style.display = 'none'
 
-  @content: (_,{type,source,row,col,message}) ->
-    @div class: 'levels-view annotation-overlay', =>
-      @span class: 'source pull-right', =>
-        @text "Source: #{source.charAt(0).toUpperCase()+source.slice(1)}"
-      if type is 'warning'
-        @span class: 'type badge badge-warning', =>
-          @text 'Warning'
-      else
-        @span class: 'type badge badge-error', =>
-          @text 'Error'
-      @span class: 'position', =>
-        @text "at line #{row+1}" + if col? then ", column #{col+1}" else ""
-      @hr()
-      @text message
+    @headerDiv = document.createElement 'div'
+    @headerDiv.className = 'header'
+    @element.appendChild @headerDiv
 
-  ## Initialization and destruction --------------------------------------------
+    @typeSpan = document.createElement 'span'
+    @typeSpan.className = "type badge badge-flexible badge-#{type}"
+    @typeSpan.textContent = type
+    @headerDiv.appendChild @typeSpan
 
-  initialize: (textEditor,_) ->
+    @positionSpan = document.createElement 'span'
+    @positionSpan.className = 'position'
+    @positionSpan.textContent = "at line #{row + 1}" + if col then ", column #{col + 1}" else ''
+    @headerDiv.appendChild @positionSpan
 
-  destroy: ->
+    @sourceSpan = document.createElement 'span'
+    @sourceSpan.className = 'source'
+    @sourceSpan.textContent = source
+    @headerDiv.appendChild @sourceSpan
 
-  ## Showing and hiding the overlay --------------------------------------------
+    @element.appendChild document.createElement 'hr'
+
+    @messageDiv = document.createElement 'div'
+    @messageDiv.textContent = message
+    @element.appendChild @messageDiv
 
   show: ->
-    @fadeIn(100)
+    @element.style.display = ''
+    return
 
   hide: ->
-    @fadeOut(100)
-
-# ------------------------------------------------------------------------------
+    @element.style.display = 'none'
+    return

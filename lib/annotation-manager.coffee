@@ -34,8 +34,7 @@ class AnnotationManager
       class: "annotation annotation-#{type}"
 
     # create annotation overlay
-    annotationOverlayView = new AnnotationOverlayView @textEditor, \
-      {type,source,row,col,message}
+    annotationOverlayView = new AnnotationOverlayView {type,source,row,col,message}
     @textEditor.decorateMarker marker,
       type: 'overlay'
       item: annotationOverlayView
