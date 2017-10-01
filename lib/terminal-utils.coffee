@@ -1,14 +1,9 @@
-# ------------------------------------------------------------------------------
-
 module.exports =
-
-  ## Constants -----------------------------------------------------------------
-
   DEFAULT_IS_HIDDEN: false
   DEFAULT_SIZE: 20
   MIN_SIZE: 15
   DEFAULT_FONT_SIZE: 12
-  FONT_SIZES: [10,12,14,16,18,20,22,24,26,28,30]
+  FONT_SIZES: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
   DEFAULT_CONTENT_LIMIT: 2000
   TOPKEK:
     """
@@ -22,30 +17,29 @@ module.exports =
              |_|
     """
 
-  ## Dispatching key events ----------------------------------------------------
-
-  dispatchKeyEvent: (terminal,event) ->
+  dispatchKeyEvent: (terminal, event) ->
     buffer = terminal.getBuffer()
-    keystroke = atom.keymaps.keystrokeForKeyboardEvent(event.originalEvent)
-    keystrokeParts = if keystroke is '-' then ['-'] else keystroke.split('-')
+    keystroke = atom.keymaps.keystrokeForKeyboardEvent event.originalEvent
+    keystrokeParts = if keystroke == '-' then ['-'] else keystroke.split '-'
+
     switch keystrokeParts.length
       when 1
-        switch (firstPart = keystrokeParts[0])
-          when 'enter' then buffer.enterInput()
+        switch firstPart = keystrokeParts[0]
+          when 'enter'     then buffer.enterInput()
           when 'backspace' then buffer.removeCharFromInput()
-          when 'up' then buffer.showPreviousInput()
-          when 'left' then buffer.moveInputCursorLeft()
-          when 'down' then buffer.showSubsequentInput()
-          when 'right' then buffer.moveInputCursorRight()
-          when 'space' then buffer.addStringToInput(' ')
+          when 'up'        then buffer.showPreviousInput()
+          when 'left'      then buffer.moveInputCursorLeft()
+          when 'down'      then buffer.showSubsequentInput()
+          when 'right'     then buffer.moveInputCursorRight()
+          when 'space'     then buffer.addStringToInput ' '
           else
-            if firstPart.length is 1
-              buffer.addStringToInput(firstPart)
+            if firstPart.length == 1
+              buffer.addStringToInput firstPart
       when 2
         switch keystrokeParts[0]
           when 'shift'
             secondPart = keystrokeParts[1]
-            if secondPart.length is 1
-              buffer.addStringToInput(secondPart)
+            if secondPart.length == 1
+              buffer.addStringToInput secondPart
 
-# ------------------------------------------------------------------------------
+    return
