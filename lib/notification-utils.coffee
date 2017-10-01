@@ -16,6 +16,8 @@ module.exports =
     if important || atom.config.get(configKeyPath)
       atom.notifications.addError head, {detail: body, dismissable: true}
 
+    return
+
   addInfo: (body, {head, important} = {}) ->
     head ?= @DEFAULT_INFO_HEAD
     important ?= false
@@ -23,6 +25,8 @@ module.exports =
     configKeyPath = 'levels.notificationSettings.showAllInfos'
     if important || atom.config.get(configKeyPath)
       atom.notifications.addInfo head, {detail: body, dismissable: true}
+
+    return
 
   addSuccess: (body, {head, important} = {}) ->
     head ?= @DEFAULT_SUCCESS_HEAD
@@ -32,6 +36,8 @@ module.exports =
     if important || atom.config.get(configKeyPath)
       atom.notifications.addSuccess head, {detail: body, dismissable: true}
 
+    return
+
   addWarning: (body, {head, important} = {}) ->
     head ?= @DEFAULT_WARNING_HEAD
     important ?= false
@@ -39,3 +45,5 @@ module.exports =
     configKeyPath = 'levels.notificationSettings.showAllWarnings'
     if important || atom.config.get(configKeyPath)
       atom.notifications.addWarning head, {detail: body, dismissable: true}
+
+    return
