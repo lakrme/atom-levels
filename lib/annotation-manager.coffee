@@ -33,9 +33,13 @@ class AnnotationManager
       else
         annotationOverlayView.hide()
 
+    return
+
   removeAnnotationForExecutionIssue: (executionIssue) ->
     executionIssueId = executionIssue.getId()
     @textEditorSubscriptionsByExecutionIssueId[executionIssueId].dispose()
     delete @textEditorSubscriptionsByExecutionIssueId[executionIssueId]
     @markersByExecutionIssueId[executionIssueId].destroy()
     delete @markersByExecutionIssueId[executionIssueId]
+
+    return
