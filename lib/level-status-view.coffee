@@ -5,7 +5,7 @@ module.exports =
 class LevelStatusView
   constructor: ->
     @element = document.createElement 'div'
-    @element.className = 'levels-view level-status inline-block'
+    @element.className = 'level-status inline-block'
     @element.style.display = 'none'
 
     @statusLink = document.createElement 'a'
