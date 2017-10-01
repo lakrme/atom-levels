@@ -1,20 +1,11 @@
-{CompositeDisposable} = require('atom')
-
-AnnotationOverlayView = require('./annotation-overlay-view')
-
-# ------------------------------------------------------------------------------
+AnnotationOverlayView = require './annotation-overlay-view'
 
 module.exports =
 class AnnotationManager
-
-  ## Construction --------------------------------------------------------------
-
   constructor: (@levelCodeEditor) ->
     @textEditor = @levelCodeEditor.getTextEditor()
-    @textEditorSubscrsByExecutionIssueId = {}
+    @textEditorSubscriptionsByExecutionIssueId = {}
     @markersByExecutionIssueId = {}
-
-  ## Level code editor annotations ---------------------------------------------
 
   addAnnotationForExecutionIssue: (executionIssue) ->
     type = executionIssue.getType()
@@ -23,43 +14,28 @@ class AnnotationManager
     col = parseInt(executionIssue.getColumn() ? 0) - 1
     message = executionIssue.getMessage()
 
-    # create line marker
-    marker = @textEditor.markBufferRange [[row,col],[row,Infinity]],
-      invalidate: 'inside'
+    marker = @textEditor.markBufferRange [[row, col], [row, Infinity]], invalidate: 'inside'
     @markersByExecutionIssueId[executionIssue.getId()] = marker
 
-    # dye line number
-    @textEditor.decorateMarker marker,
-      type: 'line-number'
-      class: "annotation annotation-#{type}"
+    @textEditor.decorateMarker marker, {type: 'line-number', class: "annotation annotation-#{type}"}
 
-    # create annotation overlay
-    annotationOverlayView = new AnnotationOverlayView {type,source,row,col,message}
-    @textEditor.decorateMarker marker,
-      type: 'overlay'
-      item: annotationOverlayView
-      position: 'tail'
-    currentCursorPos = @textEditor.getCursorBufferPosition()
-    if currentCursorPos.row is row
+    annotationOverlayView = new AnnotationOverlayView {type, source, row, col, message}
+    @textEditor.decorateMarker marker, {type: 'overlay', item: annotationOverlayView, position: 'tail'}
+
+    if @textEditor.getCursorBufferPosition().row == row
       annotationOverlayView.show()
     else
       annotationOverlayView.hide()
 
-    textEditorSubscrs = new CompositeDisposable
-    textEditorSubscrs.add @textEditor.onDidChangeCursorPosition (event) ->
-      cursorPos = event.newBufferPosition
-      if cursorPos.row is row
+    @textEditorSubscriptionsByExecutionIssueId[executionIssue.getId()] = @textEditor.onDidChangeCursorPosition (event) ->
+      if event.newBufferPosition.row == row
         annotationOverlayView.show()
       else
         annotationOverlayView.hide()
-    @textEditorSubscrsByExecutionIssueId[executionIssue.getId()] = \
-      textEditorSubscrs
 
   removeAnnotationForExecutionIssue: (executionIssue) ->
     executionIssueId = executionIssue.getId()
-    @textEditorSubscrsByExecutionIssueId[executionIssueId].dispose()
-    delete @textEditorSubscrsByExecutionIssueId[executionIssueId]
+    @textEditorSubscriptionsByExecutionIssueId[executionIssueId].dispose()
+    delete @textEditorSubscriptionsByExecutionIssueId[executionIssueId]
     @markersByExecutionIssueId[executionIssueId].destroy()
     delete @markersByExecutionIssueId[executionIssueId]
-
-# ------------------------------------------------------------------------------

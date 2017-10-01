@@ -244,7 +244,6 @@ class LevelCodeEditor
   removeExecutionIssue: (executionIssue) ->
     @annotationManager.removeAnnotationForExecutionIssue(executionIssue)
     delete @currentExecutionIssuesById[executionIssue.getId()]
-    executionIssue.destroy()
 
   removeExecutionIssues: ->
     for _,executionIssue of @currentExecutionIssuesById
