@@ -1,5 +1,4 @@
 {CompositeDisposable,Emitter} = require('atom')
-{$}                           = require('atom-space-pen-views')
 
 terminalUtils                 = require('./terminal-utils')
 
@@ -323,12 +322,13 @@ class Terminal
         @emitter.emit('did-start-reading-typed-message')
 
   readTypedMessage: (buffer) ->
-    typedMessageXml = $($.parseXML(buffer)).find('message')
+    parser = new DOMParser
+    xml = parser.parseFromString buffer, 'text/xml'
+    typedMessageXml = xml.querySelectorAll 'message'
     typedMessage = {id: @constructor.getTypedMessageId()}
 
-    # read attributes
-    typedMessageXml.each ->
-      $.each this.attributes, (i,attr) ->
+    for msg in typedMessageXml
+      for attr in msg.attributes
         if attr.name.startsWith('data-')
           dataKey = attr.name.substr(5)
           typedMessage.data ?= {}
@@ -336,9 +336,8 @@ class Terminal
         else
           typedMessage[attr.name] = attr.value
 
-    # read head and body content
-    typedMessage.head = typedMessageXml.children('head').text()
-    typedMessage.body = typedMessageXml.children('body').text()
+    typedMessage.head = typedMessageXml[0].getElementsByTagName('head')[0]?.textContent ? ''
+    typedMessage.body = typedMessageXml[0].getElementsByTagName('body')[0]?.textContent ? ''
     typedMessage
 
   ## Managing terminal commands ------------------------------------------------
