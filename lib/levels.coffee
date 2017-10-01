@@ -1,14 +1,10 @@
+levelsConfig     = require './levels-config'
+levelsServices   = require './levels-services'
 workspaceManager = require('./workspace-manager').getInstance()
 
-levelsConfig     = require('./levels-config')
-levelsServices   = require('./levels-services')
-
-# ------------------------------------------------------------------------------
-
 module.exports =
-
   activate: (state) ->
-    workspaceManager.setUpWorkspace(state)
+    workspaceManager.setUpWorkspace state
     workspaceManager.activateEventHandlers()
     workspaceManager.activateCommandHandlers()
 
@@ -17,22 +13,13 @@ module.exports =
     workspaceManager.deactivateEventHandlers()
     workspaceManager.deactivateCommandHandlers()
 
-  ## Configuration -------------------------------------------------------------
-
   config: levelsConfig
 
-  ## Provided services ---------------------------------------------------------
-
-  provideLevels: levelsServices.provideLevels
-
-  ## Consumed services ---------------------------------------------------------
+  provideLevels: ->
+    levelsServices.provideLevels()
 
   consumeStatusBar: (statusBar) ->
-    workspaceManager.consumeStatusBar(statusBar)
-
-  ## Serialization -------------------------------------------------------------
+    workspaceManager.consumeStatusBar statusBar
 
   serialize: ->
     workspaceManager.serializeWorkspace()
-
-# ------------------------------------------------------------------------------
