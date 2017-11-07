@@ -1,3 +1,8 @@
+## 0.5.4 (2017-11-07)
+
+* Removed the `atom-space-pen-views` dependency from several modules
+* Converted the level select view into an `atom-select-list` view
+
 ## 0.5.3 (2017-09-24)
 
 * Removed the parentheses from the level status view
