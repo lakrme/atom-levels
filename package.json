@@ -1,6 +1,6 @@
 {
   "name": "levels",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "The Atom interface to level programming languages created with the LPS plug-in for Eclipse",
   "keywords": [
     "atom",
