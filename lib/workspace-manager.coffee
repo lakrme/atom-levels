@@ -354,10 +354,10 @@ class WorkspaceManager
       activeTextEditor = activeLevelCodeEditor.getTextEditor()
       activeTerminal = activeLevelCodeEditor.getTerminal()
       if (filePath = activeTextEditor.getPath() ? atom.showSaveDialogSync())?
-        activeTextEditor.saveAs(filePath)
-        activeLevelCodeEditor.startExecution()
-        activeTerminal.show()
-        activeTerminal.focus()
+        activeTextEditor.saveAs(filePath).then () =>
+          activeLevelCodeEditor.startExecution()
+          activeTerminal.show()
+          activeTerminal.focus()
     else
       event.abortKeyBinding()
 
