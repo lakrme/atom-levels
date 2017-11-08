@@ -1,0 +1,14 @@
+{
+  ".levels-view, atom-text-editor[data-grammar~=levels]": {
+    "ctrl-alt-c": "levels:clear-terminal",
+    "ctrl-alt-f": "levels:toggle-terminal-focus",
+    "ctrl-alt-l": "levels:toggle-level-select",
+    "ctrl-alt-r": "levels:start-execution",
+    "ctrl-alt-s": "levels:stop-execution",
+    "ctrl-alt-t": "levels:toggle-terminal",
+    "ctrl-alt-+": "levels:increase-terminal-font-size",
+    "ctrl-alt--": "levels:decrease-terminal-font-size",
+    "ctrl-alt-up": "levels:scroll-terminal-to-top",
+    "ctrl-alt-down": "levels:scroll-terminal-to-bottom"
+  }
+}
