@@ -6,7 +6,7 @@
     "atom",
     "levels"
   ],
-  "main": "./lib/levels",
+  "main": "./lib/main",
   "repository": {
     "type": "git",
     "url": "https://github.com/lakrme/atom-levels.git"
