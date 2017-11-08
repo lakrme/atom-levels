@@ -1,6 +1,6 @@
 ## 0.5.5 (2017-11-08)
 
-* Fixed a bug where the execution started before the file was saved.
+* Fixed a bug where the execution started before the file was saved
 
 ## 0.5.4 (2017-11-07)
 
