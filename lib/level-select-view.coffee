@@ -1,5 +1,5 @@
 SelectListView = require 'atom-select-list'
-workspace      = require('./workspace').getInstance()
+workspace      = require './workspace'
 
 module.exports =
 class LevelSelectView

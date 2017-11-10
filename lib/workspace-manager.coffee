@@ -2,7 +2,7 @@
 path                  = require('path')
 
 languageRegistry      = require('./language-registry').getInstance()
-workspace             = require('./workspace').getInstance()
+workspace             = require './workspace'
 
 notificationUtils     = require('./notification-utils')
 workspaceUtils        = require('./workspace-utils')

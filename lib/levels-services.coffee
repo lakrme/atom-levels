@@ -1,5 +1,5 @@
 languageRegistry = require('./language-registry').getInstance()
-workspace        = require('./workspace').getInstance()
+workspace        = require './workspace'
 
 module.exports =
   provideLevels: ->

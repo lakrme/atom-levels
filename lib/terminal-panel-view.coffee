@@ -3,7 +3,7 @@
 
 terminalUtils         = require('./terminal-utils')
 
-workspace             = require('./workspace').getInstance()
+workspace             = require './workspace'
 
 # ------------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 {CompositeDisposable} = require 'atom'
-workspace             = require('./workspace').getInstance()
+workspace             = require './workspace'
 
 module.exports =
 class LevelStatusView

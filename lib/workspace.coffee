@@ -122,9 +122,4 @@ class Workspace
     @activeLevelCodeEditorSubscriptions.dispose()
     return
 
-module.exports =
-class WorkspaceProvider
-  instance = null
-
-  @getInstance: ->
-    instance ?= new Workspace
+module.exports = new Workspace
