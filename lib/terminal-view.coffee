@@ -1,19 +1,17 @@
-{CompositeDisposable} = require('atom')
-{$,View}              = require('atom-space-pen-views')
-
-# ------------------------------------------------------------------------------
+{CompositeDisposable} = require 'atom'
 
 module.exports =
-class TerminalView extends View
+class TerminalView
+  constructor: (@terminal) ->
+    @element = document.createElement 'div'
+    @element.className = 'terminal'
+    @element.tabIndex = 0
 
-  @content: ->
-    @div class: 'terminal', tabindex: 0, =>
-      @div class: 'cursor', outlet: 'cursor', =>
-        @raw '&nbsp;'
+    @cursor = document.createElement 'div'
+    @cursor.className = 'cursor'
+    @cursor.innerHTML = '&nbsp;'
+    @element.appendChild @cursor
 
-  ## Initialization ------------------------------------------------------------
-
-  initialize: (@terminal) ->
     @lineHeight = @terminal.getLineHeight()
     @charWidth = @terminal.getCharWidth()
     @cursorRowIndex = 0
@@ -31,9 +29,9 @@ class TerminalView extends View
     @terminalSubscrs.add @terminal.onDidFocus =>
       @activeLine.focus()
     @terminalSubscrs.add @terminal.onDidScrollToTop =>
-      @scrollToTop()
+      @element.scrollTop = 0
     @terminalSubscrs.add @terminal.onDidScrollToBottom =>
-      @scrollToBottom()
+      @element.scrollTop = @element.scrollHeight
     @terminalSubscrs.add @terminal.onDidCreateNewLine =>
       @updateOnDidCreateNewLine()
     @terminalSubscrs.add @terminal.onDidUpdateActiveLine (activeLine) =>
@@ -47,19 +45,17 @@ class TerminalView extends View
     @terminalSubscrs.add @terminal.onDidReadTypedMessage (typedMessage) =>
       @didReadTypedMessage(typedMessage)
 
-  ## Moving the cursor -------------------------------------------------------
-
   moveCursorAbsolute: (rowIndex,colIndex) ->
     @moveCursorAbsoluteInRow(colIndex)
     @moveCursorAbsoluteInCol(rowIndex)
 
   moveCursorAbsoluteInRow: (@cursorColIndex) ->
     left = @cursorColIndex * @charWidth
-    @cursor.css('left',left)
+    @cursor.style.left = "#{left}px"
 
   moveCursorAbsoluteInCol: (@cursorRowIndex) ->
     top = @cursorRowIndex * @lineHeight
-    @cursor.css('top',top)
+    @cursor.style.top = "#{top}px"
 
   moveCursorRelative: (rowOffset,colOffset) ->
     @moveCursorRelativeInRow(colOffset)
@@ -68,46 +64,54 @@ class TerminalView extends View
   moveCursorRelativeInRow: (colOffset) ->
     @cursorColIndex += colOffset
     leftOffset = colOffset * @charWidth
-    @cursor.css('left',parseInt(@cursor.css('left'))+leftOffset)
+    @cursor.style.left = "#{parseInt(@cursor.style.left) + leftOffset}px"
 
   moveCursorRelativeInCol: (rowOffset) ->
     @cursorRowIndex += rowOffset
     topOffset = rowOffset * @lineHeight
-    @cursor.css('top',parseInt(@cursor.css('top'))+topOffset)
+    @cursor.style.top = "#{parseInt(@cursor.style.top) + topOffset}px"
 
-  ## Updating this view --------------------------------------------------------
+  show: ->
+    @element.style.display = ''
+
+  hide: ->
+    @element.style.display = 'none'
 
   updateOnDidChangeIsVisible: (@isVisible) ->
     if @isVisible then @show() else @hide()
 
   updateOnDidChangeSize: (@size) ->
-    @height(@size*@lineHeight)
+    @element.style.height = "#{@size*@lineHeight}px"
 
   updateOnDidChangeFontSize: (@fontSize) ->
     @lineHeight = @terminal.getLineHeight()
     @charWidth = @terminal.getCharWidth()
-    @css('font-size',"#{@fontSize}px")
-    @css('line-height',"#{@lineHeight}px")
-    @height(@size*@lineHeight)
+    @element.style.fontSize = "#{@fontSize}px"
+    @element.style.lineHeight = "#{@lineHeight}px"
+    @element.style.height = "#{@size*@lineHeight}px"
 
+    # TODO: Fix pseudo-class styling!
     # update the icon size
-    icons = $('.icon:before')
-    icons.css('font-size',"#{@fontSize}px")
-    icons.css('height',"#{@fontSize}px")
-    icons.css('width',"#{@fontSize}px")
+    # icons = document.querySelector '.icon::before'
+    # icons.style.fontSize = "#{@fontSize}px"
+    # icons.style.height = "#{@fontSize}px"
+    # icons.style.width = "#{@fontSize}px"
 
     # update the cursor
-    @cursor.css('height',"#{@lineHeight}px")
-    @cursor.css('width',"#{@charWidth}px")
+    @cursor.style.height = "#{@lineHeight}px"
+    @cursor.style.width = "#{@charWidth}px"
     @moveCursorAbsolute(@cursorRowIndex,@cursorColIndex)
 
   updateOnDidCreateNewLine: ->
     unless @waitingForTypedMessage
-      @activeLine = $('<div class="line" tabindex="0">&nbsp;</div>')
-      @append(@activeLine)
+      @activeLine = document.createElement 'div'
+      @activeLine.className = 'line'
+      @activeLine.tabIndex = 0
+      @activeLine.innerHTML = '&nbsp;'
+      @element.appendChild(@activeLine)
       @activeLineIndex++
       @moveCursorAbsolute(@activeLineIndex,0)
-      @scrollToBottom()
+      @element.scrollTop = @element.scrollHeight
 
       configKeyPath = 'levels.terminalSettings.terminalContentLimit'
       contentLimit = atom.config.get(configKeyPath)
@@ -117,32 +121,29 @@ class TerminalView extends View
 
   updateOnDidUpdateActiveLine: ({input,output,inputCursorPos}) ->
     unless @waitingForTypedMessage
-      @activeLine.empty()
-      @activeLine.text(output+input)
-      @activeLine.append('&nbsp;')
+      @activeLine.innerHTML = ''
+      @activeLine.textContent = output+input
+      @activeLine.innerHTML += '&nbsp;'
       @moveCursorAbsoluteInRow(output.length+inputCursorPos)
 
   updateOnDidClear: ->
-    @empty()
-    @append(@cursor)
-    @append(@activeLine)
+    @element.innerHTML = ''
+    @element.appendChild @cursor
+    @element.appendChild @activeLine
     @moveCursorRelative(-@activeLineIndex,0)
     @activeLineIndex = 0
 
   removeLines: (index,deleteCount) ->
-    @children().slice(index,index+deleteCount).remove()
+    @element.children.slice(index,index+deleteCount).remove()
     @moveCursorRelative(-deleteCount,0)
     @activeLineIndex -= deleteCount
-
-  ## Processing typed messages -------------------------------------------------
 
   didStartReadingTypedMessage: ->
     @waitingForTypedMessage = true
 
   didStopReadingTypedMessage: ->
     if @waitingForTypedMessage
-      @activeLine.empty()
-      @activeLine.append('&nbsp;')
+      @activeLine.innerHTML = '&nbsp;'
       @waitingForTypedMessage = false
 
   didReadTypedMessage: (typedMessage) ->
@@ -186,9 +187,6 @@ class TerminalView extends View
     # put typed message
     htmlLines = headHtmlLines.concat(bodyHtmlLines)
     for line,i in htmlLines
-      @activeLine.empty()
-      @activeLine.append(line)
+      @activeLine.innerHTML = line
       if i isnt htmlLines.length - 1
         @updateOnDidCreateNewLine()
-
-# ------------------------------------------------------------------------------

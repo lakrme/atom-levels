@@ -29,7 +29,7 @@ class WorkspaceManager
       # initialize the terminal
       terminal.newLine()
       terminal.writeInfo('Welcome to the Levels terminal!')
-      terminalView
+      terminalView.element
 
     @levelSelectView = new LevelSelectView
     @terminalPanelView = new TerminalPanelView
