@@ -9,17 +9,15 @@ class AnnotationManager
 
   addAnnotationForExecutionIssue: (executionIssue) ->
     type = executionIssue.getType()
-    source = executionIssue.getSource()
-    row = parseInt(executionIssue.getRow()) - 1
-    col = parseInt(executionIssue.getColumn() ? 0) - 1
-    message = executionIssue.getMessage()
+    row = executionIssue.getRow() - 1
+    col = (executionIssue.getColumn() ? 0) - 1
 
     marker = @textEditor.markBufferRange [[row, col], [row, Infinity]], invalidate: 'inside'
     @markersByExecutionIssueId[executionIssue.getId()] = marker
 
     @textEditor.decorateMarker marker, {type: 'line-number', class: "annotation annotation-#{type}"}
 
-    annotationOverlayView = new AnnotationOverlayView {type, source, row, col, message}
+    annotationOverlayView = new AnnotationOverlayView executionIssue
     @textEditor.decorateMarker marker, {type: 'overlay', item: annotationOverlayView, position: 'tail'}
 
     if @textEditor.getCursorBufferPosition().row == row

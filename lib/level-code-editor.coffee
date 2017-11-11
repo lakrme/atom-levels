@@ -232,8 +232,8 @@ class LevelCodeEditor
           id: typedMessage.id
           type: type
           source: source
-          row: typedMessage.data.row
-          column: typedMessage.data.col
+          row: parseInt(typedMessage.data.row)
+          column: parseInt(typedMessage.data.col)
           message: typedMessage.body
         @addExecutionIssue(executionIssue)
 
