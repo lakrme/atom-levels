@@ -4,7 +4,6 @@ path                  = require('path')
 languageRegistry      = require('./language-registry').getInstance()
 workspace             = require './workspace'
 
-notificationUtils     = require('./notification-utils')
 workspaceUtils        = require('./workspace-utils')
 
 LevelCodeEditor       = require('./level-code-editor')

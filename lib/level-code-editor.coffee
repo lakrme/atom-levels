@@ -2,7 +2,6 @@
 
 languageRegistry              = require('./language-registry').getInstance()
 
-notificationUtils             = require('./notification-utils')
 workspaceUtils                = require('./workspace-utils')
 
 AnnotationManager             = require('./annotation-manager')
