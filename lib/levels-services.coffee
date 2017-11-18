@@ -1,4 +1,4 @@
-languageRegistry = require('./language-registry').getInstance()
+languageRegistry = require './language-registry'
 workspace        = require './workspace'
 
 module.exports =

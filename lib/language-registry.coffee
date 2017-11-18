@@ -259,12 +259,6 @@ class LanguageRegistry
 
 # ------------------------------------------------------------------------------
 
-module.exports =
-class LanguageRegistryProvider
-
-  instance = null
-
-  @getInstance: ->
-    instance ?= new LanguageRegistry
+module.exports = new LanguageRegistry
 
 # ------------------------------------------------------------------------------

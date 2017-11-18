@@ -1,6 +1,6 @@
 {Point}          = require 'atom'
 path             = require 'path'
-languageRegistry = require('./language-registry').getInstance()
+languageRegistry = require './language-registry'
 
 module.exports =
   DEFAULT_WHEN_TO_WRITE_FILE_HEADER: 'before saving the buffer'

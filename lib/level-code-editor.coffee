@@ -1,6 +1,6 @@
 {CompositeDisposable,Emitter} = require('atom')
 
-languageRegistry              = require('./language-registry').getInstance()
+languageRegistry              = require './language-registry'
 
 workspaceUtils                = require('./workspace-utils')
 

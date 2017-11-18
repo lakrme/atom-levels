@@ -1,7 +1,7 @@
 {CompositeDisposable} = require('atom')
 path                  = require('path')
 
-languageRegistry      = require('./language-registry').getInstance()
+languageRegistry      = require './language-registry'
 workspace             = require './workspace'
 
 workspaceUtils        = require('./workspace-utils')
