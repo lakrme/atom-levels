@@ -230,7 +230,7 @@ class TerminalPanelView extends View
       @on 'dblclick', '.resize-handle', =>
         @resizeToMinSize()
       @on 'keydown', (event) =>
-        terminalUtils.dispatchKeyEvent(@activeTerminal,event)
+        @dispatchKeyEvent(event)
       @on 'click', '.warning-link', (event) =>
         @doSetCursorToExecutionIssuePorsition(event.target)
       @on 'click', '.error-link', (event) =>
@@ -295,3 +295,29 @@ class TerminalPanelView extends View
       @bottomPanel = null
 
 # ------------------------------------------------------------------------------
+  dispatchKeyEvent: (event) ->
+    buffer = @activeTerminal.getBuffer()
+    keystroke = atom.keymaps.keystrokeForKeyboardEvent event.originalEvent
+    keystrokeParts = if keystroke == '-' then ['-'] else keystroke.split '-'
+
+    switch keystrokeParts.length
+      when 1
+        switch firstPart = keystrokeParts[0]
+          when 'enter'     then buffer.enterInput()
+          when 'backspace' then buffer.removeCharFromInput()
+          when 'up'        then buffer.showPreviousInput()
+          when 'left'      then buffer.moveInputCursorLeft()
+          when 'down'      then buffer.showSubsequentInput()
+          when 'right'     then buffer.moveInputCursorRight()
+          when 'space'     then buffer.addStringToInput ' '
+          else
+            if firstPart.length == 1
+              buffer.addStringToInput firstPart
+      when 2
+        switch keystrokeParts[0]
+          when 'shift'
+            secondPart = keystrokeParts[1]
+            if secondPart.length == 1
+              buffer.addStringToInput secondPart
+
+    return
