@@ -28,7 +28,7 @@ class ExecutionManager
 
     runExecPath = @language.getExecutablePath()
     configFilePath = @language.getConfigFilePath()
-    levelNumber = @level.getNumber()
+    levelNumber = @level.getNumber() - 1
     filePath = @textEditor.getPath()
 
     cmd = ([
