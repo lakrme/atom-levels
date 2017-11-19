@@ -16,7 +16,7 @@ module.exports =
   config: levelsConfig
 
   provideLevels: ->
-    levelsServices.provideLevels()
+    return levelsServices
 
   consumeStatusBar: (statusBar) ->
     workspaceManager.consumeStatusBar statusBar
