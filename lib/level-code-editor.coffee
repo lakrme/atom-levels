@@ -152,7 +152,7 @@ class LevelCodeEditor
     @language
 
   getExecutionMode: ->
-    @language.getExecutionMode()
+    @language.isExecutable()
 
   getLevel: ->
     @level

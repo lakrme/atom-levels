@@ -202,7 +202,7 @@ class TerminalPanelView extends View
   updateOnDidChangeActiveLanguage: ->
     # update terminal panel for current execution mode
     unless @activeTerminal.isExecuting()
-      if @activeLanguage.getExecutionMode()?
+      if @activeLanguage.isExecutable()
         @startExecutionLink.show()
         @stopExecutionLink.hide()
         @noExecutionModeAvailableInfo.hide()
@@ -276,7 +276,7 @@ class TerminalPanelView extends View
       @noExecutionModeAvailableInfo.hide()
     else
       @stopExecutionLink.hide()
-      if @activeLanguage.getExecutionMode()?
+      if @activeLanguage.isExecutable()
         @startExecutionLink.show()
         @noExecutionModeAvailableInfo.hide()
       else

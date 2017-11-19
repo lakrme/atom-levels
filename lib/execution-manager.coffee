@@ -26,7 +26,7 @@ class ExecutionManager
 
     @terminal.writeLn 'Running level code …'
 
-    runExecPath = @language.getRunExecPath()
+    runExecPath = @language.getExecutablePath()
     configFilePath = @language.getConfigFilePath()
     levelNumber = @level.getNumber()
     filePath = @textEditor.getPath()
