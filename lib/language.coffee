@@ -118,7 +118,7 @@ class Language
     if languageUtils.isConfigFileKey property
       configFilePath = @properties.configFilePath
       configFile = CSON.readFileSync configFilePath
-      convertedValue = languageUtils.toConfigFileValue property, value, this
+      convertedValue = languageUtils.toConfigFileValue property, value
       configFile[property] = convertedValue
       CSON.writeFileSync configFilePath, configFile
     return
