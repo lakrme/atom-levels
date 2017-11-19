@@ -229,7 +229,7 @@ class LanguageRegistry
     levels = []
     for levelConfig,i in config.levels
       levelProperties =
-        number: i
+        number: i + 1
         name: levelConfig.name
         description: levelConfig.description
         options: levelConfig.options ? {}
