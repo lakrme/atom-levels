@@ -383,12 +383,6 @@ class WorkspaceManager
 
 # ------------------------------------------------------------------------------
 
-module.exports =
-class WorkspaceManagerProvider
-
-  instance = null
-
-  @getInstance: ->
-    instance ?= new WorkspaceManager
+module.exports = new WorkspaceManager
 
 # ------------------------------------------------------------------------------

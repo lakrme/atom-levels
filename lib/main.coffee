@@ -1,6 +1,6 @@
 levelsConfig     = require './levels-config'
 levelsServices   = require './levels-services'
-workspaceManager = require('./workspace-manager').getInstance()
+workspaceManager = require './workspace-manager'
 
 module.exports =
   activate: (state) ->
