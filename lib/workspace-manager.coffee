@@ -282,7 +282,7 @@ class WorkspaceManager
   ## Command handlers ----------------------------------------------------------
 
   doToggleLevelSelect: (event) =>
-    if workspace.isActive()
+    if workspace.isActive() && !workspace.getActiveLevelCodeEditor().isExecuting()
       @levelSelectView.toggle()
     else
       event.abortKeyBinding()
