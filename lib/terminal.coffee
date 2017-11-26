@@ -267,10 +267,10 @@ class Terminal
       startTag += '>\n'
       headElem  = "<head>\n#{head}\n</head>\n" if head
       bodyElem  = "<body>\n#{body}\n</body>\n" if body
-      endTag    = "</message>\n"
+      endTag    = "</message>"
       typedMessage = startTag + headElem + bodyElem + endTag
       @buffer.newLine() if @buffer.getActiveLineOutput()
-      @buffer.write(typedMessage)
+      @buffer.writeLn(typedMessage)
 
   writeSubtle: (message) ->
     @writeTypedMessage({type: 'subtle',body: message})
