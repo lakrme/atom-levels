@@ -20,7 +20,7 @@ class WorkspaceManager
   ## Set-up and clean-up operations --------------------------------------------
 
   # Initializes the Levels workspace view components (invoked on activation).
-  setUpWorkspace: (@state) ->
+  setUpWorkspace: ->
     @viewProviders = new CompositeDisposable
     @viewProviders.add atom.views.addViewProvider Terminal, (terminal) ->
       terminalView = new TerminalView(terminal)
@@ -222,19 +222,6 @@ class WorkspaceManager
       unless workspace.isLevelCodeEditor(textEditor)
         levelCodeEditor = null
 
-        # check if text editor was serialized with the added language
-        levelCodeEditorState = @state?.levelCodeEditorStatesById?[textEditor.id]
-        if levelCodeEditorState?
-          # try to deserialize level code editor with updated language registry
-          # (returns `undefined` if the associated language of this text editor
-          # has not been added yet)
-          levelCodeEditor = atom.deserializers.deserialize(levelCodeEditorState)
-          # if successful, remove text editor serialization from state (prevents
-          # the re-deserialization of the level code editor when adding another
-          # language)
-          if levelCodeEditor?
-            delete @state.levelCodeEditorStatesById[textEditor.id]
-
         # check if text editor is associated with the language
         # TODO replace with a more efficient approach
         unless levelCodeEditor?
@@ -371,15 +358,6 @@ class WorkspaceManager
   consumeStatusBar: (statusBar) ->
     @levelStatusView = new LevelStatusView
     @levelStatusTile = statusBar.addRightTile {priority: 9, item: @levelStatusView.element}
-
-  ## Serialization -------------------------------------------------------------
-
-  serializeWorkspace: ->
-    levelCodeEditorStatesById = {}
-    for levelCodeEditor in workspace.getLevelCodeEditors()
-      levelCodeEditorStatesById[levelCodeEditor.getId()] =
-        levelCodeEditor.serialize()
-    {levelCodeEditorStatesById}
 
 # ------------------------------------------------------------------------------
 

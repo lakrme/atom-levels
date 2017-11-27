@@ -9,13 +9,6 @@ TerminalBuffer                = require('./terminal-buffer')
 module.exports =
 class Terminal
 
-  ## Deserialization -----------------------------------------------------------
-
-  atom.deserializers.add(this)
-  @version: 1
-  @deserialize: ({data}) ->
-    new Terminal(data)
-
   ## IDs for typed messages ----------------------------------------------------
 
   @typedMessageIdCounter: 0
@@ -440,15 +433,3 @@ class Terminal
       @visible = false
       @emitter.emit('did-hide')
       @emitter.emit('did-change-is-visible',@visible)
-
-  ## Serialization -------------------------------------------------------------
-
-  serialize: ->
-    version: @constructor.version
-    deserializer: 'Terminal'
-    data:
-      visible: @visible
-      size: @size
-      fontSize: @fontSize
-
-# ------------------------------------------------------------------------------
