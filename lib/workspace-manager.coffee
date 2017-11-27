@@ -28,6 +28,9 @@ class WorkspaceManager
       # initialize the terminal
       terminal.newLine()
       terminal.writeInfo('Welcome to the Levels terminal!')
+      terminal.writeSubtle 'Hit the "Run" button in the top-right corner of the terminal,'
+      terminal.writeSubtle 'type "run" and hit enter or press "ctrl-alt-r" to execute your program.'
+      terminal.writeSubtle 'While executing, hit the "Stop" button or press "ctrl-alt-s" to stop the execution of your program.'
       terminalView.element
 
     @levelSelectView = new LevelSelectView
