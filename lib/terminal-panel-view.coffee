@@ -1,113 +1,182 @@
-{CompositeDisposable} = require('atom')
-{$,View}              = require('atom-space-pen-views')
-
-terminalUtils         = require('./terminal-utils')
-
+{CompositeDisposable} = require 'atom'
+terminalUtils         = require './terminal-utils'
 workspace             = require './workspace'
 
-# ------------------------------------------------------------------------------
-
 module.exports =
-class TerminalPanelView extends View
+class TerminalPanelView
+  constructor: ->
+    @element = document.createElement 'div'
+    @element.className = 'levels-view terminal-panel'
+    @element.tabIndex = 0
 
-  @content: ->
-    @div class: 'levels-view terminal-panel', tabindex: 0, =>
-      @div class: 'resize-handle', outlet: 'resizeHandle'
-      @div class: 'control-bar', outlet: 'controlBar', =>
+    @resizeHandle = document.createElement 'div'
+    @resizeHandle.className = 'resize-handle'
+    @element.appendChild @resizeHandle
 
-        @div class: 'control-bar-left', =>
+    @controlBar = document.createElement 'div'
+    @controlBar.className = 'control-bar'
+    @element.appendChild @controlBar
 
-          @div class: 'control-group', =>
-            @div class: 'control-element', =>
-              @a href: '#', click: 'doShowTerminal', \
-                  outlet: 'showTerminalLink', =>
-                @span class: 'icon icon-triangle-up', =>
-                  @text 'Show Terminal'
-            @div class: 'control-element', =>
-              @a href: '#', click: 'doHideTerminal', \
-                  outlet: 'hideTerminalLink', =>
-                @span class: 'icon icon-triangle-down', =>
-                  @text 'Hide Terminal'
+    @terminalContainer = document.createElement 'div'
+    @terminalContainer.className = 'terminal-container'
+    @element.appendChild @terminalContainer
 
-          @div class: 'control-group terminal-controls', \
-              outlet: 'terminalControls', =>
+    @terminalInfo = document.createElement 'div'
+    @terminalInfo.className = 'terminal-info'
+    @element.appendChild @terminalInfo
 
-            @div class: 'control-bar-separator'
+    cbl = document.createElement 'div'
+    cbl.className = 'control-bar-left'
+    @controlBar.appendChild cbl
 
-            @div class: 'control-element', =>
-              @a href: '#', click: 'doClearTerminal', =>
-                @span class: 'icon icon-x', =>
-                  @text 'Clear'
-            @div class: 'control-element', =>
-              @a href: '#', click: 'doScrollTerminalToTop', =>
-                @span class: 'icon icon-move-up', =>
-                  @text 'Scroll To Top'
-            @div class: 'control-element', =>
-              @a href: '#', click: 'doScrollTerminalToBottom', =>
-                @span class: 'icon icon-move-down', =>
-                  @text 'Scroll To Bottom'
+    cbr = document.createElement 'div'
+    cbr.className = 'control-bar-right'
+    @controlBar.appendChild cbr
 
-            @div class: 'control-bar-separator'
+    @executionControls = document.createElement 'div'
+    @executionControls.className = 'control-group execution-controls'
+    cbr.appendChild @executionControls
 
-            @div class: 'control-element', =>
-              @span class: 'icon icon-mention', =>
-                @text 'Font Size:'
-              @select class: 'font-size-select', outlet: 'fontSizeSelect'
+    @startExecutionLink = document.createElement 'a'
+    @startExecutionLink.href = '#'
+    @startExecutionLink.addEventListener 'click', => @doStartExecution()
+    @executionControls.appendChild @startExecutionLink
+    startExecutionLinkSpan = document.createElement 'span'
+    startExecutionLinkSpan.className = 'text-success icon icon-playback-play'
+    startExecutionLinkSpan.textContent = 'Run'
+    @startExecutionLink.appendChild startExecutionLinkSpan
 
-        @div class: 'control-bar-right', =>
+    @stopExecutionLink = document.createElement 'a'
+    @stopExecutionLink.href = '#'
+    @stopExecutionLink.addEventListener 'click', => @doStopExecution()
+    @executionControls.appendChild @stopExecutionLink
+    stopExecutionLinkSpan = document.createElement 'span'
+    stopExecutionLinkSpan.className = 'text-error icon icon-primitive-square'
+    stopExecutionLinkSpan.textContent = 'Stop'
+    @stopExecutionLink.appendChild stopExecutionLinkSpan
 
-          @div class: 'control-group execution-controls', \
-              outlet: 'executionControls', =>
-            @a href: '#', click: 'doStartExecution', \
-                outlet: 'startExecutionLink', =>
-              @span class: 'text-success icon icon-playback-play', =>
-                @text 'Run'
-            @a href: '#', click: 'doStopExecution', \
-                outlet: 'stopExecutionLink', =>
-              @span class: 'text-error icon icon-primitive-square', =>
-                @text 'Stop'
-            @span class: 'text-subtle', \
-                outlet: 'noExecutionModeAvailableInfo', =>
-              @text '(no execution mode available)'
+    @noExecutionModeAvailableInfo = document.createElement 'span'
+    @noExecutionModeAvailableInfo.className = 'text-subtle'
+    @noExecutionModeAvailableInfo.textContent = '(no execution mode available)'
+    @executionControls.appendChild @noExecutionModeAvailableInfo
 
-      @div class: 'terminal-container', outlet: 'terminalContainer'
-      @div class: 'terminal-info', outlet: 'terminalInfo'
+    cg = document.createElement 'div'
+    cg.className = 'control-group'
+    cbl.appendChild cg
 
-  ## Initialization and destruction --------------------------------------------
+    ce = document.createElement 'div'
+    ce.className = 'control-element'
+    cg.appendChild ce
 
-  initialize: ->
-    @workspaceSubscrs = new CompositeDisposable
-    @workspaceSubscrs.add workspace.onDidEnterWorkspace \
-      (activeLevelCodeEditor) =>
-        @updateOnDidEnterWorkspace(activeLevelCodeEditor)
-    @workspaceSubscrs.add workspace.onDidExitWorkspace =>
-        @updateOnDidExitWorkspace()
-    @workspaceSubscrs.add workspace.onDidChangeActiveLanguage \
-      ({activeLanguage}) =>
-        @updateOnDidChangeActiveLanguageOfWorkspace(activeLanguage)
-    @workspaceSubscrs.add workspace.onDidChangeActiveTerminal \
-      (activeTerminal) =>
-        @updateOnDidChangeActiveTerminalOfWorkspace(activeTerminal)
+    @showTerminalLink = document.createElement 'a'
+    @showTerminalLink.href = '#'
+    @showTerminalLink.addEventListener 'click', => @doShowTerminal()
+    ce.appendChild @showTerminalLink
+    showTerminalLinkSpan = document.createElement 'span'
+    showTerminalLinkSpan.className = 'icon icon-triangle-up'
+    showTerminalLinkSpan.textContent = 'Show Terminal'
+    @showTerminalLink.appendChild showTerminalLinkSpan
+
+    ce = document.createElement 'div'
+    ce.className = 'control-element'
+    cg.appendChild ce
+
+    @hideTerminalLink = document.createElement 'a'
+    @hideTerminalLink.href = '#'
+    @hideTerminalLink.addEventListener 'click', => @doHideTerminal()
+    ce.appendChild @hideTerminalLink
+    hideTerminalLinkSpan = document.createElement 'span'
+    hideTerminalLinkSpan.className = 'icon icon-triangle-down'
+    hideTerminalLinkSpan.textContent = 'Hide Terminal'
+    @hideTerminalLink.appendChild hideTerminalLinkSpan
+
+    @terminalControls = document.createElement 'div'
+    @terminalControls.className = 'control-group terminal-controls'
+    cbl.appendChild @terminalControls
+
+    cbs = document.createElement 'div'
+    cbs.className = 'control-bar-separator'
+    @terminalControls.appendChild cbs
+
+    ce = document.createElement 'div'
+    ce.className = 'control-element'
+    @terminalControls.appendChild ce
+
+    clearTerminalLink = document.createElement 'a'
+    clearTerminalLink.href = '#'
+    clearTerminalLink.addEventListener 'click', => @doClearTerminal()
+    ce.appendChild clearTerminalLink
+    clearTerminalLinkSpan = document.createElement 'span'
+    clearTerminalLinkSpan.className = 'icon icon-x'
+    clearTerminalLinkSpan.textContent = 'Clear'
+    clearTerminalLink.appendChild clearTerminalLinkSpan
+
+    ce = document.createElement 'div'
+    ce.className = 'control-element'
+    @terminalControls.appendChild ce
+
+    scrollTopLink = document.createElement 'a'
+    scrollTopLink.href = '#'
+    scrollTopLink.addEventListener 'click', => @doScrollTerminalToTop()
+    ce.appendChild scrollTopLink
+    scrollTopLinkSpan = document.createElement 'span'
+    scrollTopLinkSpan.className = 'icon icon-move-up'
+    scrollTopLinkSpan.textContent = 'Scroll To Top'
+    scrollTopLink.appendChild scrollTopLinkSpan
+
+    ce = document.createElement 'div'
+    ce.className = 'control-element'
+    @terminalControls.appendChild ce
+
+    scrollBottomLink = document.createElement 'a'
+    scrollBottomLink.href = '#'
+    scrollBottomLink.addEventListener 'click', => @doScrollTerminalToBottom()
+    ce.appendChild scrollBottomLink
+    scrollBottomLinkSpan = document.createElement 'span'
+    scrollBottomLinkSpan.className = 'icon icon-move-down'
+    scrollBottomLinkSpan.textContent = 'Scroll To Bottom'
+    scrollBottomLink.appendChild scrollBottomLinkSpan
+
+    cbs = document.createElement 'div'
+    cbs.className = 'control-bar-separator'
+    @terminalControls.appendChild cbs
+
+    ce = document.createElement 'div'
+    ce.className = 'control-element'
+    @terminalControls.appendChild ce
+
+    fontSizeLinkSpan = document.createElement 'span'
+    fontSizeLinkSpan.className = 'icon icon-mention'
+    fontSizeLinkSpan.textContent = 'Font Size:'
+    ce.appendChild fontSizeLinkSpan
+
+    @fontSizeSelect = document.createElement 'select'
+    @fontSizeSelect.className = 'font-size-select'
+    ce.appendChild @fontSizeSelect
+
+    @workspaceSubscrs = new CompositeDisposable()
+    @workspaceSubscrs.add workspace.onDidEnterWorkspace (activeLevelCodeEditor) => @updateOnDidEnterWorkspace(activeLevelCodeEditor)
+    @workspaceSubscrs.add workspace.onDidExitWorkspace => @updateOnDidExitWorkspace()
+    @workspaceSubscrs.add workspace.onDidChangeActiveLanguage ({activeLanguage}) => @updateOnDidChangeActiveLanguageOfWorkspace(activeLanguage)
+    @workspaceSubscrs.add workspace.onDidChangeActiveTerminal (activeTerminal) => @updateOnDidChangeActiveTerminalOfWorkspace(activeTerminal)
 
   destroy: ->
     @workspaceSubscrs.dispose()
     @hide()
 
-  ## Resizing the terminal panel -----------------------------------------------
-
   resizeStarted: =>
-    $(document).on('mousemove',@resize)
-    $(document).on('mouseup',@resizeStopped)
+    document.addEventListener 'mousemove', @resize
+    document.addEventListener 'mouseup', @resizeStopped
 
   resizeStopped: =>
-    $(document).off('mousemove',@resize)
-    $(document).off('mouseup',@resizeStopped)
+    document.removeEventListener 'mousemove', @resize
+    document.removeEventListener 'mouseup', @resizeStopped
 
-  resize: ({pageY,which}) =>
+  resize: ({pageY, which}) =>
     return @resizeStopped() unless which is 1
-    controlBarHeight = @controlBar.outerHeight()
-    newHeight = $(document.body).height() - pageY - controlBarHeight
-    heightDiff = newHeight - @height()
+    controlBarHeight = @controlBar.offsetHeight
+    newHeight = document.body.clientHeight - pageY - controlBarHeight
+    heightDiff = newHeight - @element.clientHeight
     lineHeight = @activeTerminal.getLineHeight()
     sizeDiff = (heightDiff - (heightDiff % lineHeight)) / lineHeight
     if sizeDiff isnt 0
@@ -116,8 +185,6 @@ class TerminalPanelView extends View
 
   resizeToMinSize: =>
     @activeTerminal.setSize(terminalUtils.MIN_SIZE)
-
-  ## Handling view events ------------------------------------------------------
 
   doShowTerminal: ->
     workspaceView = atom.views.getView(atom.workspace)
@@ -156,8 +223,6 @@ class TerminalPanelView extends View
       atom.views.getView(textEditor).focus()
       textEditor.setCursorBufferPosition(pos)
 
-  ## Updating the terminal panel's state ---------------------------------------
-
   updateOnDidEnterWorkspace: (activeLevelCodeEditor) ->
     @activeLanguage = activeLevelCodeEditor.getLanguage()
     @activeTerminal = activeLevelCodeEditor.getTerminal()
@@ -171,119 +236,115 @@ class TerminalPanelView extends View
     @activeLanguageSubscrs?.dispose()
     @activeTerminal = null
     @activeLanguage = null
-    @fontSizeSelect.off()
-    @off()
+    @fontSizeSelect.removeEventListener 'change', @onDidChangeFontSize
+    # TODO: @off()
 
   updateOnDidChangeActiveLanguageOfWorkspace: (@activeLanguage) ->
     @activeLanguageSubscrs?.dispose()
-    @activeLanguageSubscrs = new CompositeDisposable
-    @activeLanguageSubscrs.add @activeLanguage.observe =>
-      @updateOnDidChangeActiveLanguage()
+    @activeLanguageSubscrs = new CompositeDisposable()
+    @activeLanguageSubscrs.add @activeLanguage.observe => @updateOnDidChangeActiveLanguage()
 
   updateOnDidChangeActiveTerminalOfWorkspace: (@activeTerminal) ->
     @activeTerminalSubscrs?.dispose()
-    @activeTerminalSubscrs = new CompositeDisposable
-    @activeTerminalSubscrs.add @activeTerminal.observeIsVisible \
-      (isVisible) =>
-        @updateOnDidChangeIsVisibleOfActiveTerminal(isVisible)
-    @activeTerminalSubscrs.add @activeTerminal.onDidChangeSize \
-      (size) =>
-        @updateOnDidChangeTerminalSize(size)
-    @activeTerminalSubscrs.add @activeTerminal.observeFontSize \
-      (fontSize) =>
-        @updateOnDidChangeTerminalFontSize(fontSize)
-    @activeTerminalSubscrs.add @activeTerminal.observeIsExecuting \
-      (isExecuting) =>
-        @updateOnDidChangeIsExecutingOfActiveTerminal(isExecuting)
+    @activeTerminalSubscrs = new CompositeDisposable()
+    @activeTerminalSubscrs.add @activeTerminal.observeIsVisible (isVisible) => @updateOnDidChangeIsVisibleOfActiveTerminal(isVisible)
+    @activeTerminalSubscrs.add @activeTerminal.onDidChangeSize (size) => @updateOnDidChangeTerminalSize(size)
+    @activeTerminalSubscrs.add @activeTerminal.observeFontSize (fontSize) => @updateOnDidChangeTerminalFontSize(fontSize)
+    @activeTerminalSubscrs.add @activeTerminal.observeIsExecuting (isExecuting) => @updateOnDidChangeIsExecutingOfActiveTerminal(isExecuting)
 
-    @terminalContainer.empty()
-    @terminalContainer.append(atom.views.getView(@activeTerminal))
+    @terminalContainer.innerHTML = ''
+    @terminalContainer.appendChild(atom.views.getView(@activeTerminal))
 
   updateOnDidChangeActiveLanguage: ->
     # update terminal panel for current execution mode
     unless @activeTerminal.isExecuting()
       if @activeLanguage.isExecutable()
-        @startExecutionLink.show()
-        @stopExecutionLink.hide()
-        @noExecutionModeAvailableInfo.hide()
+        @startExecutionLink.style.display = ''
+        @stopExecutionLink.style.display = 'none'
+        @noExecutionModeAvailableInfo.style.display = 'none'
       else
-        @startExecutionLink.hide()
-        @stopExecutionLink.hide()
-        @noExecutionModeAvailableInfo.show()
+        @startExecutionLink.style.display = 'none'
+        @stopExecutionLink.style.display = 'none'
+        @noExecutionModeAvailableInfo.style.display = ''
+
+  onDidChangeFontSize: =>
+    fontSize = parseInt(@fontSizeSelect.value)
+    @activeTerminal.setFontSize(fontSize)
 
   updateOnDidChangeIsVisibleOfActiveTerminal: (isVisible) ->
     if isVisible
       # update control bar elements
-      @resizeHandle.show()
-      @showTerminalLink.hide()
-      @hideTerminalLink.show()
-      @terminalControls.css('display','inline')
+      @resizeHandle.style.display = ''
+      @showTerminalLink.style.display = 'none'
+      @hideTerminalLink.style.display = ''
+      @terminalControls.style.display = 'inline'
       # set up font size select handler
-      @fontSizeSelect.off()
-      @fontSizeSelect.change =>
-        fontSize = parseInt(@fontSizeSelect.val())
-        @activeTerminal.setFontSize(fontSize)
+      @fontSizeSelect.removeEventListener 'change', @onDidChangeFontSize
+      @fontSizeSelect.addEventListener 'change', @onDidChangeFontSize
       # set up event handlers
-      @off()
-      @on 'mousedown', '.resize-handle', =>
-        @resizeStarted()
-      @on 'dblclick', '.resize-handle', =>
-        @resizeToMinSize()
-      @on 'keydown', (event) =>
-        @dispatchKeyEvent(event)
-      @on 'click', '.warning-link', (event) =>
-        @doSetCursorToExecutionIssuePorsition(event.target)
-      @on 'click', '.error-link', (event) =>
-        @doSetCursorToExecutionIssuePorsition(event.target)
-      @on 'focusin', =>
-        @activeTerminal.didFocus()
-      @on 'focusout', =>
-        @activeTerminal.didBlur()
+      # TODO: @off()
+      @resizeHandle.addEventListener 'mousedown', => @resizeStarted()
+      @resizeHandle.addEventListener 'dblclick', => @resizeToMinSize()
+      @element.addEventListener 'keydown', (event) => @dispatchKeyEvent(event)
+
+      # TODO
+      # @on 'click', '.warning-link', (event) =>
+      #   @doSetCursorToExecutionIssuePorsition(event.target)
+      # @on 'click', '.error-link', (event) =>
+      #  @doSetCursorToExecutionIssuePorsition(event.target)
+      @element.addEventListener 'focusin', => @activeTerminal.didFocus()
+      @element.addEventListener 'focusout', => @activeTerminal.didBlur()
     else
       # update control bar elements
-      @resizeHandle.hide()
-      @showTerminalLink.show()
-      @hideTerminalLink.hide()
-      @terminalControls.hide()
+      @resizeHandle.style.display = 'none'
+      @showTerminalLink.style.display = ''
+      @hideTerminalLink.style.display = 'none'
+      @terminalControls.style.display = 'none'
       # remove font size selector handler
-      @fontSizeSelect.off()
+      @fontSizeSelect.removeEventListener 'change', @onDidChangeFontSize
       # remove event handlers
-      @off()
+      # TODO: @off()
 
   updateOnDidChangeTerminalSize: (size) ->
-    @terminalInfo.empty()
-    @terminalInfo.append("Lines: #{size}")
-    if @terminalInfo.is(':visible')
-      @terminalInfo.stop(true)
-      @terminalInfo.css('opacity',100)
+    @terminalInfo.innerHTML = "Lines: #{size}"
+    @terminalInfo.style.display = 'block'
+    if @terminalInfo.style.opacity > 0
+      clearInterval @interval
+      @interval = null
+      @terminalInfo.style.opacity = 1
     else
-      @terminalInfo.show()
-    @terminalInfo.fadeOut(1400)
+      @terminalInfo.style.opacity = 1
+ 
+    @interval ?= setInterval () =>
+      if @terminalInfo.style.opacity > 0
+        @terminalInfo.style.opacity -= 0.01
+      else
+        clearInterval @interval
+        @interval = null
+        @terminalInfo.style.display = 'none'
+    , 14
 
   updateOnDidChangeTerminalFontSize: (currentFontSize) ->
-    @fontSizeSelect.empty()
+    @fontSizeSelect.innerHTML = ''
     for fontSize in terminalUtils.FONT_SIZES
       optionHtml = "<option value=\"#{fontSize}\""
       optionHtml += ' selected' if fontSize is currentFontSize
       optionHtml += ">#{fontSize}</option>"
-      option = $(optionHtml)
-      @fontSizeSelect.append(option)
+      @fontSizeSelect.innerHTML += optionHtml
 
   updateOnDidChangeIsExecutingOfActiveTerminal: (isExecuting) ->
     if isExecuting
-      @startExecutionLink.hide()
-      @stopExecutionLink.show()
-      @noExecutionModeAvailableInfo.hide()
+      @startExecutionLink.style.display = 'none'
+      @stopExecutionLink.style.display = ''
+      @noExecutionModeAvailableInfo.style.display = 'none'
     else
-      @stopExecutionLink.hide()
+      @stopExecutionLink.style.display = 'none'
       if @activeLanguage.isExecutable()
-        @startExecutionLink.show()
-        @noExecutionModeAvailableInfo.hide()
+        @startExecutionLink.style.display = ''
+        @noExecutionModeAvailableInfo.style.display = 'none'
       else
-        @startExecutionLink.hide()
-        @noExecutionModeAvailableInfo.show()
-
-  ## Showing and hiding the terminal panel -------------------------------------
+        @startExecutionLink.style.display = 'none'
+        @noExecutionModeAvailableInfo.style.display = ''
 
   show: ->
     unless @bottomPanel?
@@ -294,10 +355,9 @@ class TerminalPanelView extends View
       @bottomPanel.destroy()
       @bottomPanel = null
 
-# ------------------------------------------------------------------------------
   dispatchKeyEvent: (event) ->
     buffer = @activeTerminal.getBuffer()
-    keystroke = atom.keymaps.keystrokeForKeyboardEvent event.originalEvent
+    keystroke = atom.keymaps.keystrokeForKeyboardEvent event
     keystrokeParts = if keystroke == '-' then ['-'] else keystroke.split '-'
 
     switch keystrokeParts.length
