@@ -40,6 +40,7 @@ class Terminal
         unset: @unsetCommand
         clear: @clearCommand
         topkek: @topkekCommand
+        run: @runCommand
 
     @focused = false
     @refCount = 0
@@ -377,6 +378,10 @@ class Terminal
 
   topkekCommand: =>
     @writeLn(terminalUtils.TOPKEK)
+
+  runCommand: =>
+    workspaceView = atom.views.getView(atom.workspace)
+    atom.commands.dispatch(workspaceView,'levels:start-execution')
 
   # ## Locking and unlocking the terminal ----------------------------------------
   #
