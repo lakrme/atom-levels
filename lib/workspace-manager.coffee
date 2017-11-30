@@ -342,11 +342,19 @@ class WorkspaceManager
       activeLevelCodeEditor = workspace.getActiveLevelCodeEditor()
       activeTextEditor = activeLevelCodeEditor.getTextEditor()
       activeTerminal = activeLevelCodeEditor.getTerminal()
-      if (filePath = activeTextEditor.getPath() ? atom.showSaveDialogSync())?
-        activeTextEditor.saveAs(filePath).then () =>
-          activeLevelCodeEditor.startExecution()
-          activeTerminal.show()
-          activeTerminal.focus()
+
+      path = activeTextEditor.getPath()
+      startExecutionAction = () =>
+        activeLevelCodeEditor.startExecution()
+        activeTerminal.show()
+        activeTerminal.focus()
+
+      if path
+        activeTextEditor.saveAs(path).then startExecutionAction
+      else
+        textEditorPaneContainer = atom.workspace.paneContainerForItem activeTextEditor
+        textEditorPaneContainer.getActivePane().saveItemAs activeTextEditor, (error) =>
+          startExecutionAction() if !error
     else
       event.abortKeyBinding()
 
