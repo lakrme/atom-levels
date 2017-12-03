@@ -1,30 +1,22 @@
 @import "ui-variables";
 
-@panel-background-color: @overlay-background-color;
-@panel-border-color: @overlay-border-color;
-@panel-box-shadow-color: rgba(0,0,0,0.5);
-@panel-section-background-color: lighten(@overlay-background-color,3%);
-
-@terminal-text-color: @text-color-highlight;
 @terminal-background-color: @inset-panel-background-color;
-
-@annotation-warning-background-color: fade(@text-color-warning,25%);
-@annotation-error-background-color: fade(@text-color-error,25%);
+@terminal-text-color: @text-color-highlight;
 
 atom-text-editor.editor {
   .line-number {
     &.syntax--annotation:hover {
       opacity: 1;
     }
-    
-    &.annotation-warning {
-      color: @text-color-warning;
-      background-color: @annotation-warning-background-color;
-    }
-    
+
     &.annotation-error {
+      background-color: fade(@text-color-error, 25%);
       color: @text-color-error;
-      background-color: @annotation-error-background-color;
+    }
+
+    &.annotation-warning {
+      background-color: fade(@text-color-warning, 25%);
+      color: @text-color-warning;
     }
   }
 }
@@ -33,20 +25,18 @@ atom-text-editor.editor {
   &.annotation-overlay {
     background-color: @overlay-background-color;
     border-radius: @component-border-radius;
-    border-top-left-radius: 0px;
-    box-shadow: 0px 2px 8px 1px rgba(0, 0, 0, 0.3);
-    color: @text-color-highlight;
+    border-top-left-radius: 0;
+    box-shadow: 0 2px 8px 1px rgba(0, 0, 0, 0.3);
+    color: @terminal-text-color;
     font-size: 85%;
-
     margin-top: 3px;
-    padding: @component-padding / 2;
-
     min-width: 300px;
+    padding: @component-padding / 2;
     width: 50%;
 
     hr {
       border-top: 1px solid @overlay-border-color;
-      margin: 5px 0px;
+      margin: 5px 0;
     }
 
     &::before {
@@ -54,17 +44,15 @@ atom-text-editor.editor {
       border-style: solid;
       border-width: 6px 0 0 6px;
       content: "";
-      height: 0;
       left: 0;
       position: absolute;
       top: -3px;
-      width: 0;
     }
 
     .header {
+      align-items: center;
       display: flex;
       flex-direction: row;
-      align-items: center;
 
       .type {
         flex: 0 0 auto;
@@ -73,14 +61,14 @@ atom-text-editor.editor {
       }
 
       .position {
-        flex: 0 0 auto;
         color: @text-color;
+        flex: 0 0 auto;
       }
 
       .source {
+        color: @text-color;
         flex: 0 0 auto;
         margin-left: auto;
-        color: @text-color;
         text-transform: capitalize;
 
         &::before {
@@ -90,26 +78,10 @@ atom-text-editor.editor {
     }
   }
 
-  &.panel {
-    background-color: @panel-background-color;
-    border: 1px solid @panel-border-color;
-    border-radius: @component-border-radius;
-    box-shadow: 0 0 10px @panel-box-shadow-color;
-
-    margin-left: auto;
-    margin-right: auto;
-    padding: @component-padding;
-
-    position: absolute;
-    right: 0;
-    left: 0;
-  }
-
   &.terminal-panel {
     background-color: @tool-panel-background-color;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+    user-select: none;
     width: 100%;
-    -webkit-user-select: none;
 
     .resize-handle {
       cursor: row-resize;
@@ -122,33 +94,51 @@ atom-text-editor.editor {
     }
 
     .control-bar {
-      height: 26px;
       padding: 5px 12.5px;
+
       a, a:focus, a:hover {
         color: @text-color;
         outline: 0;
       }
+
       .control-bar-left {
         display: inline;
-        width: 50%;
-        .control-element {padding-right: 10px;}
-        .control-bar-separator {margin-right: 10px;}
+
+        .control-element {
+          margin-right: 10px;
+        }
+
+        .control-bar-separator {
+          margin-right: 10px;
+        }
       }
+
       .control-bar-right {
         display: inline;
         float: right;
-        a {margin-left: 10px;}
-        .control-bar-separator {margin-left: 10px;}
+
+        a {
+          margin-left: 10px;
+        }
+
+        .control-bar-separator {
+          margin-left: 10px;
+        }
       }
+
       .control-group {
         display: inline;
 
         &.execution-controls {
-          a {text-decoration: none;}
+          a {
+            text-decoration: none;
+          }
         }
       }
+
       .control-element {
         display: inline;
+
         select {
           background-color: transparent;
           border: none;
@@ -157,44 +147,60 @@ atom-text-editor.editor {
           cursor: pointer;
           margin-left: 5px;
           -webkit-appearance: none;
-          &:hover {text-decoration: underline;}
+
+          &:hover {
+            text-decoration: underline;
+          }
         }
       }
+
       .control-bar-separator {
         border-left: 1px solid @text-color-subtle;
         display: inline;
       }
+
       .icon::before {
-        font-size: 14px;
-        height: 14px;
-        margin-right: 0;
-        width: 14px;
+        font-size: @font-size;
+        height: auto;
+        margin-right: 5px;
+        width: auto;
       }
     }
 
     .terminal-container {
       background-color: @terminal-background-color;
+
       .terminal {
         color: @terminal-text-color;
         font-family: Courier;
         overflow: auto;
         padding-left: 12.5px;
         position: relative;
+
         .cursor {
           background-color: @terminal-text-color;
           margin-left: 12.5px;
           position: absolute;
         }
+
         .line {
           white-space: pre;
+
           a {
-            &.warning-link {
-              color: @text-color-warning;
-              &:hover {color: lighten(@text-color-warning,8%)}
-            }
             &.error-link {
               color: @text-color-error;
-              &:hover {color: lighten(@text-color-error,5%)}
+
+              &:hover {
+                color: lighten(@text-color-error, 5%);
+              }
+            }
+
+            &.warning-link {
+              color: @text-color-warning;
+
+              &:hover {
+                color: lighten(@text-color-warning, 8%);
+              }
             }
           }
         }
@@ -202,18 +208,19 @@ atom-text-editor.editor {
     }
 
     .terminal-info {
+      align-items: center;
       background-color: @terminal-background-color;
       border: 1px solid @terminal-text-color;
       border-radius: @component-border-radius;
-      bottom: 10px;
+      bottom: 12.5px;
       color: @terminal-text-color;
       display: none;
       height: 25px;
-      line-height: 15px;
-      padding: 4px 12.5px;
-      position: absolute;
-      right: 10px;
+      justify-content: center;
       opacity: 0;
+      padding: 5px 12.5px;
+      position: absolute;
+      right: 12.5px;
     }
   }
 }
