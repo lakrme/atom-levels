@@ -53,11 +53,6 @@ class TerminalPanelView
     @stopExecutionLink.appendChild stopExecutionLinkSpan
     @executionControls.appendChild @stopExecutionLink
 
-    @noExecutionModeAvailableInfo = document.createElement 'span'
-    @noExecutionModeAvailableInfo.className = 'text-subtle'
-    @noExecutionModeAvailableInfo.textContent = '(no execution mode available)'
-    @executionControls.appendChild @noExecutionModeAvailableInfo
-
     cg = document.createElement 'div'
     cg.className = 'control-group'
     cbl.appendChild cg
@@ -241,11 +236,9 @@ class TerminalPanelView
       if @activeLanguage.isExecutable()
         @startExecutionLink.style.display = ''
         @stopExecutionLink.style.display = 'none'
-        @noExecutionModeAvailableInfo.style.display = 'none'
       else
         @startExecutionLink.style.display = 'none'
         @stopExecutionLink.style.display = 'none'
-        @noExecutionModeAvailableInfo.style.display = ''
 
   onDidChangeFontSize: =>
     fontSize = parseInt(@fontSizeSelect.value)
@@ -313,15 +306,12 @@ class TerminalPanelView
     if isExecuting
       @startExecutionLink.style.display = 'none'
       @stopExecutionLink.style.display = ''
-      @noExecutionModeAvailableInfo.style.display = 'none'
     else
       @stopExecutionLink.style.display = 'none'
       if @activeLanguage.isExecutable()
         @startExecutionLink.style.display = ''
-        @noExecutionModeAvailableInfo.style.display = 'none'
       else
         @startExecutionLink.style.display = 'none'
-        @noExecutionModeAvailableInfo.style.display = ''
 
   show: ->
     unless @bottomPanel?
