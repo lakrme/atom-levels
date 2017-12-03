@@ -23,7 +23,7 @@
     "season": "^6.0.2"
   },
   "devDependencies": {
-    "eslint": "^4.11.0"
+    "eslint": "^4.12.0"
   },
   "providedServices": {
     "levels": {
