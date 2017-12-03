@@ -1,4 +1,4 @@
-## 0.6.0 (xxxx-xx-xx)
+## 0.6.0 (2017-12-04)
 
 * Removed the `atom-space-pen-views` dependency
 * Removed the soon to be deprecated and undocumented Atom function `::showSaveDialogSync`
