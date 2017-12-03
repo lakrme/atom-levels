@@ -1,3 +1,16 @@
+## 0.6.0 (xxxx-xx-xx)
+
+* Removed the `atom-space-pen-views` dependency
+* Removed the soon to be deprecated and undocumented Atom function `::showSaveDialogSync`
+* Converted all CoffeeScript files to JavaScript
+* Disabled the level select view when executing
+* Improved handling of typed messages
+* Added `run` command to start execution
+* Added description for available commands to the help message
+* Added terminal welcome description on how to start and stop execution
+* Added doc comments for the public `workspace` functions
+* Bug fixes and performance improvements
+
 ## 0.5.5 (2017-11-08)
 
 * Fixed a bug where the execution started before the file was saved
