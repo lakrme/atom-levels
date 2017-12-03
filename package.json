@@ -16,7 +16,7 @@
   },
   "license": "MIT",
   "engines": {
-    "atom": ">=1.20.0 <2.0.0"
+    "atom": ">=1.22.0 <2.0.0"
   },
   "dependencies": {
     "atom-select-list": "^0.7.0",
