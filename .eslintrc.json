@@ -63,6 +63,7 @@
     "no-trailing-spaces": "error",
     "no-whitespace-before-property": "error",
     "object-curly-spacing": ["error", "never"],
+    "padding-line-between-statements": ["error", {"blankLine": "always", "prev": "*", "next": "return"}],
     "quotes": ["error", "single"],
     "semi": ["error", "always"],
     "semi-spacing": ["error", {"before": false, "after": true}],
