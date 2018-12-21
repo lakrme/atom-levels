@@ -2,11 +2,13 @@
   "name": "levels",
   "version": "0.6.0",
   "description": "The Atom interface to level programming languages created with the LPS plug-in for Eclipse",
+  "author": "Lasse Kristopher Meyer",
   "keywords": [
     "atom",
     "levels"
   ],
   "main": "./lib/main",
+  "homepage": "https://github.com/lakrme/atom-levels",
   "repository": {
     "type": "git",
     "url": "https://github.com/lakrme/atom-levels.git"
