@@ -35,7 +35,6 @@
     "no-self-compare": "error",
     "no-throw-literal": "error",
     "no-useless-call": "error",
-    "no-useless-catch": "error",
     "no-useless-concat": "error",
     "no-useless-return": "error",
     "no-void": "error",
