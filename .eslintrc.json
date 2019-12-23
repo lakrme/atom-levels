@@ -14,12 +14,16 @@
     "sourceType": "module"
   },
   "rules": {
+    "no-dupe-else-if": "error",
+    "no-setter-return": "error",
     "no-template-curly-in-string": "error",
     "accessor-pairs": ["error", {"getWithoutSet": false, "setWithoutGet": true}],
     "array-callback-return": ["error", {"allowImplicit": false}],
     "curly": ["error", "all"],
     "default-case": "error",
     "dot-notation": "error",
+    "grouped-accessor-pairs": ["error", "getBeforeSet"],
+    "no-constructor-return": "error",
     "no-empty-function": "error",
     "no-eval": ["error", {"allowIndirect": false}],
     "no-extra-bind": "error",
