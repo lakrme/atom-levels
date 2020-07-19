@@ -1,3 +1,7 @@
+## 0.6.1 (2020-07-19)
+
+* Updated `atom-select-list` to version 0.7.2
+
 ## 0.6.0 (2017-12-04)
 
 * Removed the `atom-space-pen-views` dependency
