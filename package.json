@@ -1,6 +1,6 @@
 {
   "name": "levels",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "The Atom interface to level programming languages created with the LPS plug-in for Eclipse",
   "author": "Lasse Kristopher Meyer",
   "keywords": [
